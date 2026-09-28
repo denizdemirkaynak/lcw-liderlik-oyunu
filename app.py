@@ -3,23 +3,24 @@ import google.generativeai as genai
 import json
 import random
 
-# --- KURUMSAL TEMA ---
+# --- SAYFA AYARLARI ---
 st.set_page_config(page_title="LCW Liderlik Akademisi", layout="wide")
 
+# Görsel iyileştirme için CSS
 st.markdown("""
     <style>
     .stButton>button { 
-        width: 100%; border-radius: 12px; height: 5em; 
-        background-color: #f8f9fa; color: #0054a6; 
+        width: 100%; border-radius: 12px; height: 6em; 
+        background-color: #ffffff; color: #0054a6; 
         border: 2px solid #0054a6; font-weight: bold;
-        transition: 0.3s;
+        white-space: normal;
     }
     .stButton>button:hover { background-color: #0054a6; color: white; }
-    .stMetric { background: #ffffff; padding: 15px; border-radius: 10px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
+    .stMetric { background: #f0f2f6; padding: 10px; border-radius: 10px; }
     </style>
     """, unsafe_allow_html=True)
 
-# API Konfigürasyonu
+# API Yapılandırması (Sizin Anahtarınız)
 genai.configure(api_key='AQ.Ab8RN6LpvpinBuDLv3Qo6n0kLMOLt_fN6DWQX4rHkjAkYvKkCA')
 model = genai.GenerativeModel('gemini-1.5-flash')
 
@@ -30,29 +31,18 @@ if 'tur' not in st.session_state:
     st.session_state.tur = 1
 if 'current_scenario' not in st.session_state:
     st.session_state.current_scenario = None
-if 'game_over' not in st.session_state:
-    st.session_state.game_over = False
+if 'finished' not in st.session_state:
+    st.session_state.finished = False
 
-# --- GENİŞLETİLMİŞ LCW SENARYO ÖRNEKLERİ ---
-# Buraya manuel olarak istediğiniz kadar (100+) soru ekleyebilirsiniz. 
-# Ama AI kısmı zaten her seferinde benzersiz üretecektir.
+# --- YEDEK SENARYO HAVUZU (AI BAĞLANTISI KESİLİRSE) ---
 havuz = [
     {
-        "olay": "Mağaza müdürü olarak, ekibin en iyi satışçısının diğer arkadaşlarına karşı kibirli davrandığını fark ettin. Satışlar çok iyi ama ekip huzursuz.",
+        "olay": "Ekibinizdeki iki kıdemli çalışan, yeni bir iş süreci üzerinde fikir ayrılığı yaşıyor ve bu durum ofis huzurunu bozuyor.",
         "secenekler": [
-            {"metin": "Birebir görüşüp satış başarısını öv ama ekip ruhunun LCW için daha kritik olduğunu anlat.", "etki": {"Moral": 10, "Verimlilik": 5, "Güven": 10}},
-            {"metin": "Ekip toplantısında isim vermeden 'nezaket' vurgulu bir konuşma yap.", "etki": {"Moral": 5, "Verimlilik": 0, "Güven": 5}},
-            {"metin": "Satışları düşürmemek adına görmezden gel, sonuçta rakamlar önemli.", "etki": {"Moral": -15, "Verimlilik": 10, "Güven": -10}},
-            {"metin": "Performansını diğerlerine örnek göster ve herkesin onun gibi olmasını iste.", "etki": {"Moral": -20, "Verimlilik": 5, "Güven": -15}}
-        ]
-    },
-    {
-        "olay": "Merkezden gelen yeni bir kural, çalışanların çok sevdiği bir esnekliği (örn: mola saati esnekliği) kaldırıyor. Ekip tepkili.",
-        "secenekler": [
-            {"metin": "Kararın nedenlerini şeffafça açıkla ve başka bir alanda iyileştirme sözü ver.", "etki": {"Güven": 15, "Moral": 5, "Verimlilik": 5}},
-            {"metin": "Bu kararı senin almadığını, 'Yukarıdan' geldiğini söyleyip sorumluluktan kaç.", "etki": {"Güven": -15, "Moral": -5, "Verimlilik": 0}},
-            {"metin": "Kararı sert bir şekilde uygula, kurallara uymayanlarla yolları ayıracağını belirt.", "etki": {"Verimlilik": 10, "Moral": -20, "Güven": -10}},
-            {"metin": "Görmezden gel, eski usul devam etmelerine sessizce izin ver.", "etki": {"Moral": 15, "Verimlilik": -15, "Güven": -5}}
+            {"metin": "İkisini aynı anda odaya çağırıp ortak bir çözüm bulana kadar çıkmayacağınızı söyleyin.", "etki": {"Moral": -10, "Verimlilik": 5, "Güven": 10}},
+            {"metin": "Fikirlerini ayrı ayrı dinleyip, LCW değerlerine en uygun olanı siz seçin.", "etki": {"Moral": 5, "Verimlilik": 15, "Güven": 5}},
+            {"metin": "Tarafsız bir moderatör eşliğinde fikirlerini tüm ekibe sunmalarını isteyin.", "etki": {"Moral": 10, "Verimlilik": 10, "Güven": 15}},
+            {"metin": "Zamanla düzeleceğini düşünüp müdahale etmeyin.", "etki": {"Moral": -15, "Verimlilik": -10, "Güven": -20}}
         ]
     }
 ]
@@ -60,76 +50,79 @@ havuz = [
 def kriz_uret():
     try:
         istek = """Sen bir LCW Liderlik Eğitmenisin. 
-        Gerçekçi, kurumsal ve 4 seçenekli bir İK/Liderlik senaryosu üret. 
-        JSON formatında şu yapıda olsun: 
-        {"olay": "...", "secenekler": [{"metin": "...", "etki": {"Moral": 10, "Verimlilik": -5, "Güven": 5}}, ...]} 
-        Lütfen 4 seçenek de birbirinden farklı yaklaşımlar (Demokratik, Otoriter, İlgisiz, Çözüm Odaklı) olsun."""
+        4 seçenekli, gerçekçi bir yönetim senaryosu üret. 
+        SADECE JSON döndür: 
+        {"olay": "...", "secenekler": [{"metin": "...", "etki": {"Moral": 5, "Verimlilik": 10, "Güven": -5}}, ...]} 
+        Lütfen 4 seçenek olsun."""
         
         cevap = model.generate_content(istek)
-        txt = cevap.text.strip().replace('```json', '').replace('```', '')
-        return json.loads(txt)
+        # JSON temizleme
+        res_text = cevap.text.strip()
+        if "```json" in res_text:
+            res_text = res_text.split("```json")[1].split("```")[0].strip()
+        elif "```" in res_text:
+            res_text = res_text.split("```")[1].split("```")[0].strip()
+            
+        return json.loads(res_text)
     except:
         return random.choice(havuz)
 
 # --- ARAYÜZ ---
-st.image("https://corporate.lcwaikiki.com/Resource/Images/logo.png", width=200)
-st.title("Liderlik Simülasyonu 2.0")
+st.title("💙 LC WAIKIKI LİDERLİK AKADEMİSİ")
+st.write("---")
 
-# Yan Panel: Skorlar
-with st.sidebar:
-    st.header("Liderlik Göstergeleri")
-    for k, v in st.session_state.stats.items():
-        st.write(f"**{k}**")
-        st.progress(v / 100)
-        st.metric("", f"%{v}")
-    
-    if st.button("Oyunu Sıfırla"):
-        st.session_state.clear()
-        st.rerun()
+# Skorlar
+col_a, col_b, col_c = st.columns(3)
+col_a.metric("😊 Ekip Morali", f"%{st.session_state.stats['Moral']}")
+col_b.metric("📈 Operasyonel Verimlilik", f"%{st.session_state.stats['Verimlilik']}")
+col_c.metric("🤝 Kurumsal Güven", f"%{st.session_state.stats['Güven']}")
 
-# Oyun Alanı
-if not st.session_state.game_over:
+st.write("---")
+
+if not st.session_state.finished:
+    # Senaryo Getir
     if st.session_state.current_scenario is None:
-        with st.spinner("Yeni kriz analiz ediliyor..."):
-            st.session_state.current_scenario = kriz_uret()
-            st.rerun()
-
-    sc = st.session_state.current_scenario
+        st.session_state.current_scenario = kriz_uret()
     
-    st.info(f"**DURUM {st.session_state.tur}:** 
-
- {sc['olay']}")
+    current = st.session_state.current_scenario
     
-    st.write("### Kararınız Nedir?")
+    # Olay Metni
+    st.subheader(f"DURUM {st.session_state.tur}")
+    st.info(current['olay'])
     
-    # 4 Seçeneği 2x2 grid yapısında gösterelim
-    col1, col2 = st.columns(2)
+    st.write("#### Kararınız Nedir?")
     
-    for i, s in enumerate(sc['secenekler']):
-        target_col = col1 if i % 2 == 0 else col2
-        if target_col.button(s['metin'], key=f"btn_{i}"):
-            # Puan güncelle
-            for k, v in s['etki'].items():
-                st.session_state.stats[k] = max(0, min(100, st.session_state.stats[k] + v))
-            
-            # Tur kontrolü
-            if st.session_state.tur >= 10: # 10 Soru sürecek
-                st.session_state.game_over = True
-            else:
-                st.session_state.tur += 1
-                st.session_state.current_scenario = None
-            st.rerun()
+    # 4 Seçeneği göster (Grid yapı)
+    c1, c2 = st.columns(2)
+    for i, s in enumerate(current['secenekler']):
+        with (c1 if i < 2 else c2):
+            if st.button(s['metin'], key=f"btn_{i}_{st.session_state.tur}"):
+                # Puanları uygula
+                for k, v in s['etki'].items():
+                    st.session_state.stats[k] = max(0, min(100, st.session_state.stats[k] + v))
+                
+                # Tura devam veya bitiş
+                if st.session_state.tur >= 10:
+                    st.session_state.finished = True
+                else:
+                    st.session_state.tur += 1
+                    st.session_state.current_scenario = None
+                st.rerun()
 
 else:
-    st.success("🏁 Simülasyon Tamamlandı!")
-    final_score = sum(st.session_state.stats.values()) / 3
-    st.header(f"Toplam Liderlik Puanınız: {int(final_score)}")
+    st.balloons()
+    st.header("🏁 Simülasyon Tamamlandı!")
+    avg_score = sum(st.session_state.stats.values()) / 3
     
-    if final_score > 70:
-        st.balloons()
-        st.write("🏆 Muazzam bir LCW Liderisiniz! Ekibiniz size güveniyor.")
-    elif final_score > 40:
-        st.write("📈 İyi bir yöneticisiniz ancak ekip bağlılığına daha çok odaklanmalısınız.")
+    st.subheader(f"Ortalama Liderlik Puanınız: {int(avg_score)} / 100")
+    
+    if avg_score > 70:
+        st.success("Mükemmel Liderlik! LCW kültürünü harika temsil ediyorsunuz.")
+    elif avg_score > 40:
+        st.warning("İyi bir yönetici adayı. Bazı alanlarda gelişime ihtiyaç var.")
     else:
-        st.write("⚠️ Liderlik tarzınızı gözden geçirmelisiniz. Verimlilik kadar insan odağı da önemli.")
-
+        st.error("Liderlik tarzınızı revize etmelisiniz. Ekip desteğine odaklanın.")
+        
+    if st.button("Tekrar Başlat"):
+        st.session_state.clear()
+        st.rerun()
