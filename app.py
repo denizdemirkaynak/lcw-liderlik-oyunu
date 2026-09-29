@@ -13,97 +13,84 @@ st.markdown("""
     @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&display=swap');
     
     html, body, [class*="css"] { font-family: 'Poppins', sans-serif; }
-    
-    /* Ana arkaplan */
     .stApp { background-color: #f5f7fa; }
+    .block-container { padding-top: 2rem; padding-bottom: 3rem; max-width: 1250px; }
     
-    /* Streamlit varsayılan padding azaltma */
-    .block-container { padding-top: 2rem; padding-bottom: 3rem; max-width: 1100px; }
-    
-    /* HERO BANNER */
     .hero-banner {
         background: linear-gradient(135deg, #0054a6 0%, #003d7a 100%);
-        padding: 40px 50px;
-        border-radius: 20px;
-        margin-bottom: 30px;
+        padding: 40px 50px; border-radius: 20px; margin-bottom: 30px;
         box-shadow: 0 10px 30px rgba(0, 84, 166, 0.25);
     }
-    .hero-banner h1 {
-        color: white; font-size: 2.4em; font-weight: 800; margin: 0;
-    }
-    .hero-banner p {
-        color: #cfe0f5; font-size: 1.1em; margin-top: 8px; font-weight: 300;
-    }
+    .hero-banner h1 { color: white; font-size: 2.4em; font-weight: 800; margin: 0; }
+    .hero-banner p { color: #cfe0f5; font-size: 1.1em; margin-top: 8px; font-weight: 300; }
     
-    /* İSTATİSTİK KARTLARI */
     .stat-card {
         background: white; border-radius: 16px; padding: 20px 24px;
-        box-shadow: 0 4px 15px rgba(0,0,0,0.06);
-        border-left: 5px solid #0054a6;
-        margin-bottom: 10px;
+        box-shadow: 0 4px 15px rgba(0,0,0,0.06); border-left: 5px solid #0054a6; margin-bottom: 10px;
     }
     .stat-label { font-size: 0.85em; color: #6b7280; font-weight: 500; text-transform: uppercase; letter-spacing: 0.5px; }
     .stat-value { font-size: 2em; font-weight: 700; color: #1f2937; margin: 4px 0; }
+    .progress-outer { background-color: #e5e7eb; border-radius: 20px; height: 10px; width: 100%; overflow: hidden; margin-top: 8px; }
+    .progress-inner { height: 100%; border-radius: 20px; transition: width 0.5s ease; }
     
-    .progress-outer {
-        background-color: #e5e7eb; border-radius: 20px; height: 10px; width: 100%; overflow: hidden; margin-top: 8px;
-    }
-    .progress-inner {
-        height: 100%; border-radius: 20px; transition: width 0.5s ease;
-    }
-    
-    /* VAKA ROZETİ */
     .vaka-badge {
         display: inline-block; background: #eaf1fb; color: #0054a6; 
-        padding: 6px 18px; border-radius: 30px; font-weight: 600; 
-        font-size: 0.9em; margin-bottom: 15px;
+        padding: 6px 18px; border-radius: 30px; font-weight: 600; font-size: 0.9em; margin-bottom: 15px;
     }
     
-    /* OLAY KUTUSU */
     .olay-box {
         background: white; border-radius: 16px; padding: 28px 30px;
-        box-shadow: 0 4px 20px rgba(0,0,0,0.07);
-        font-size: 1.15em; line-height: 1.6; color: #1f2937;
-        margin-bottom: 25px; border-top: 4px solid #0054a6;
+        box-shadow: 0 4px 20px rgba(0,0,0,0.07); font-size: 1.1em; line-height: 1.6;
+        color: #1f2937; margin-bottom: 25px; border-top: 4px solid #0054a6;
     }
     
-    /* BUTONLAR */
     .stButton>button { 
         width: 100%; border-radius: 14px; min-height: 6.5em; 
-        background-color: #ffffff; color: #0054a6; 
-        border: 1.5px solid #e0e4e8; font-weight: 500;
-        white-space: normal; padding: 14px; font-size: 15px;
-        box-shadow: 0 2px 8px rgba(0,0,0,0.04);
-        transition: all 0.25s ease;
-        text-align: left;
+        background-color: #ffffff; color: #0054a6; border: 1.5px solid #e0e4e8;
+        font-weight: 500; white-space: normal; padding: 14px; font-size: 15px;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.04); transition: all 0.25s ease; text-align: left;
     }
     .stButton>button:hover { 
         border-color: #0054a6; background-color: #0054a6; color: white; 
-        transform: translateY(-3px);
-        box-shadow: 0 8px 20px rgba(0,84,166,0.25);
+        transform: translateY(-3px); box-shadow: 0 8px 20px rgba(0,84,166,0.25);
     }
     
-    /* FORM BAŞLAT BUTONU */
     div[data-testid="stFormSubmitButton"] button {
         background: linear-gradient(135deg, #0054a6, #003d7a);
-        color: white; font-weight: 700; font-size: 17px;
-        min-height: 3.2em; border: none;
+        color: white; font-weight: 700; font-size: 17px; min-height: 3.2em; border: none;
     }
     div[data-testid="stFormSubmitButton"] button:hover {
-        background: linear-gradient(135deg, #003d7a, #0054a6);
-        color: white; transform: translateY(-2px);
+        background: linear-gradient(135deg, #003d7a, #0054a6); color: white; transform: translateY(-2px);
     }
     
-    /* SIDEBAR */
     section[data-testid="stSidebar"] { background-color: #ffffff; }
-    
     h1, h2, h3 { font-weight: 700; color: #1f2937; }
     
-    /* Final rapor kartları */
     .rapor-kart {
         background: white; border-radius: 16px; padding: 22px 26px;
         box-shadow: 0 4px 15px rgba(0,0,0,0.06); margin-bottom: 16px;
     }
+    
+    /* SAĞ PANEL: KARAR YOLCULUĞU */
+    .journey-header {
+        background: white; border-radius: 12px; padding: 14px 18px; margin-bottom: 14px;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.05); font-weight: 700; color: #0054a6; font-size: 1.05em;
+    }
+    .history-card {
+        background: white; border-radius: 12px; padding: 14px 16px; margin-bottom: 12px;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.05); border-left: 4px solid #0054a6; font-size: 0.85em;
+    }
+    .history-tur { font-weight: 700; color: #0054a6; font-size: 0.85em; margin-bottom: 4px; }
+    .history-tip {
+        display: inline-block; padding: 2px 10px; border-radius: 20px; font-size: 0.72em;
+        font-weight: 600; color: white; margin-bottom: 6px;
+    }
+    .history-metin { color: #4b5563; font-style: italic; font-size: 0.82em; margin-bottom: 8px; line-height: 1.4; }
+    .history-stat-row { display: flex; justify-content: space-between; font-size: 0.82em; margin-bottom: 3px; }
+    .stat-up { color: #16a34a; font-weight: 700; }
+    .stat-down { color: #dc2626; font-weight: 700; }
+    .stat-same { color: #9ca3af; font-weight: 600; }
+    .empty-journey { color: #9ca3af; font-size: 0.9em; text-align: center; padding: 20px 0; }
     </style>
     """, unsafe_allow_html=True)
 
@@ -136,6 +123,8 @@ if 'gecmis_konular' not in st.session_state:
     st.session_state.gecmis_konular = []
 if 'secim_gecmisi' not in st.session_state:
     st.session_state.secim_gecmisi = []
+if 'karar_gecmisi' not in st.session_state:
+    st.session_state.karar_gecmisi = []   # Sağ paneldeki "Karar Yolculuğu" için detaylı kayıt
 
 temalar = ["Performans Yönetimi", "Çalışan Bağlılığı", "Kriz Yönetimi", "Yenilikçilik",
            "Zor Kişiliklerle İletişim", "Etik İkilemler", "Mağaza Operasyonu", "Uzaktan Yönetim",
@@ -143,6 +132,8 @@ temalar = ["Performans Yönetimi", "Çalışan Bağlılığı", "Kriz Yönetimi"
 
 karakterler = ["yeni işe başlayan bir kasiyer", "10 yıllık kıdemli bir reyon sorumlusu",
                "stajyer bir çalışan", "vardiya amiri", "depo sorumlusu", "kıdemli bir mağaza müdür yardımcısı"]
+
+tip_renk = {"Demokratik": "#2563eb", "Otoriter": "#dc2626", "Koçvari": "#16a34a", "Kaçınmacı": "#6b7280", "Belirsiz": "#9ca3af"}
 
 # --- YEDEK SENARYO HAVUZU ---
 havuz = [
@@ -202,10 +193,54 @@ havuz = [
     }
 ]
 
+def aciklama_yon(v):
+    if v > 0: return "arttı"
+    elif v < 0: return "azaldı"
+    return "değişmedi"
+
+# Sayısal değişimi, hikaye diline çeviren ipuçları (AI'ya "Moral" kelimesini doğrudan söylemeden anlatı context'i vermek için)
+narratif_ipuclari = {
+    ("Moral", "arttı"): "ekibin motivasyonu ve enerjisi gözle görülür şekilde yükseldi",
+    ("Moral", "azaldı"): "ekipte hafif bir huzursuzluk ve gerginlik sezildi",
+    ("Verimlilik", "arttı"): "operasyonel sonuçlar ve iş akışı belirgin şekilde iyileşti",
+    ("Verimlilik", "azaldı"): "günlük işlerde küçük aksamalar ve yavaşlamalar ortaya çıktı",
+    ("Güven", "arttı"): "çalışanlar sizinle daha açık ve rahat iletişim kurmaya başladı",
+    ("Güven", "azaldı"): "bazı çalışanlarda size karşı hafif bir güven sarsıntısı oluştu",
+}
+
+def onceki_karar_ozeti_uret(karar):
+    """Bir önceki kararın etkilerini, oyun terimi kullanmadan hikaye diline çevirir."""
+    if not karar:
+        return None
+    ipuclari = []
+    for k, v in karar['etki'].items():
+        if abs(v) >= 5:  # küçük etkileri atla, sadece belirgin olanları anlat
+            yon = aciklama_yon(v)
+            ipucu = narratif_ipuclari.get((k, yon))
+            if ipucu:
+                ipuclari.append(ipucu)
+    if not ipuclari:
+        return f"Bir önceki turda '{karar['metin']}' yaklaşımını seçtiniz ve durum genel olarak stabil kaldı."
+    return f"Bir önceki turda '{karar['metin']}' yaklaşımını seçtiniz. Bunun sonucunda {', '.join(ipuclari)}."
+
+
 def kriz_uret():
     tema = random.choice(temalar)
     karakter = random.choice(karakterler)
     onceki_ozet = ", ".join(st.session_state.gecmis_konular[-3:]) if st.session_state.gecmis_konular else "yok"
+
+    # Bir önceki kararın hikaye özetini al (devamlılık için)
+    onceki_karar = st.session_state.karar_gecmisi[-1] if st.session_state.karar_gecmisi else None
+    baglanti_ozeti = onceki_karar_ozeti_uret(onceki_karar)
+
+    baglanti_talimati = ""
+    if baglanti_ozeti:
+        baglanti_talimati = f"""
+        DEVAMLILIK BİLGİSİ: {baglanti_ozeti}
+        Yeni senaryonun İLK CÜMLESİNDE, bu önceki kararın doğal bir yansımasını (ekip tepkisi, gelişen bir durum, bir sonuç) 
+        hikayenin doğal bir parçası olarak anlat. ASLA "Moral", "Verimlilik", "Güven" gibi oyun terimlerini doğrudan kullanma; 
+        bunun yerine gerçekçi, insani bir anlatım kullan. Sonrasında yeni krizi/durumu sun.
+        """
 
     try:
         istek = f"""Sen üst düzey, tecrübeli ve YARATICI bir LCW (LC Waikiki) Liderlik Koçusun. 
@@ -214,7 +249,9 @@ def kriz_uret():
         
         Daha önce şu konular kullanıldı, bunları TEKRARLAMA: {onceki_ozet}.
         
-        Gerçekçi, özgün, sürpriz detaylar içeren, sıradanlıktan uzak bir yönetim senaryosu yaz (2-3 cümle, somut detaylar içersin, isim kullanabilirsin).
+        {baglanti_talimati}
+        
+        Gerçekçi, özgün, sürpriz detaylar içeren, sıradanlıktan uzak bir yönetim senaryosu yaz (2-4 cümle, somut detaylar içersin, isim kullanabilirsin).
         
         4 farklı liderlik tarzını temsil eden seçenekler sun ve her birine bir "tip" etiketi ver:
         1. "Demokratik" (Güven artırır, Verimlilik bazen yavaşlar)
@@ -223,6 +260,7 @@ def kriz_uret():
         4. "Kaçınmacı" (Risk almaz, genelde skorları düşürür)
         
         ÖNEMLİ: Hiçbir seçenek 'mükemmel' olmasın, her birinin bir bedeli olsun. Etkiler -15 ile +15 arasında olsun.
+        Seçeneklerin metinleri de birbirine çok bariz zıt olmasın, gerçekçi ve yorumsal olsun (kararı okumadan tahmin edilemesin).
         
         SADECE şu JSON formatında döndür, başka hiçbir açıklama ekleme:
         {{"olay": "...", "secenekler": [
@@ -300,12 +338,9 @@ def final_rapor_uret(stats, secim_gecmisi):
 
 
 def renk_belirle(deger):
-    if deger >= 70:
-        return "#16a34a"  # yeşil
-    elif deger >= 40:
-        return "#f59e0b"  # turuncu
-    else:
-        return "#dc2626"  # kırmızı
+    if deger >= 70: return "#16a34a"
+    elif deger >= 40: return "#f59e0b"
+    else: return "#dc2626"
 
 
 def stat_karti_ciz(label, deger, icon):
@@ -317,6 +352,31 @@ def stat_karti_ciz(label, deger, icon):
             <div class="progress-outer">
                 <div class="progress-inner" style="width:{deger}%; background:{renk};"></div>
             </div>
+        </div>
+    """, unsafe_allow_html=True)
+
+
+def karar_kartı_ciz(kayit):
+    tip = kayit.get('tip', 'Belirsiz')
+    renk = tip_renk.get(tip, "#9ca3af")
+    metin_kisa = kayit['metin'][:65] + ("..." if len(kayit['metin']) > 65 else "")
+
+    stat_satirlari = ""
+    for k, v in kayit['etki'].items():
+        if v > 0:
+            cls, ok = "stat-up", f"▲ +{v}"
+        elif v < 0:
+            cls, ok = "stat-down", f"▼ {v}"
+        else:
+            cls, ok = "stat-same", "→ 0"
+        stat_satirlari += f'<div class="history-stat-row"><span>{k}</span><span class="{cls}">{ok}</span></div>'
+
+    st.markdown(f"""
+        <div class="history-card" style="border-left-color:{renk};">
+            <div class="history-tur">Vaka {kayit['tur']}</div>
+            <div class="history-tip" style="background:{renk};">{tip}</div>
+            <div class="history-metin">"{metin_kisa}"</div>
+            {stat_satirlari}
         </div>
     """, unsafe_allow_html=True)
 
@@ -357,7 +417,8 @@ if not st.session_state.started:
         st.markdown("""
         - Karşınıza toplam **10 farklı liderlik vakası** çıkacak.  
         - Her vakada **4 farklı karar seçeneği** sunulacak.  
-        - Verdiğiniz her karar; **Moral, Verimlilik ve Güven** skorlarınızı etkileyecek.  
+        - Verdiğiniz kararlar birbirine **bağlı bir hikaye** oluşturacak; bir önceki kararınızın yansımalarını bir sonraki vakada göreceksiniz.  
+        - Sağ panelde, verdiğiniz her kararın etkilerini **anlık olarak** takip edebileceksiniz.  
         - Sonunda size özel bir **"Liderlik Karnesi"** hazırlanacak.
 
         ⚠️ *Unutmayın: Hiçbir seçenek mükemmel değildir. Gerçek liderlik, doğru dengeleri kurmaktır.*
@@ -388,7 +449,7 @@ if not st.session_state.started:
 
 ust_bilgi = f"👤 {st.session_state.user_name}"
 if st.session_state.user_role:
-    ust_bilgi += f" &nbsp;•&nbsp; {st.session_state.user_role}"
+    ust_bilgi += f"  •  {st.session_state.user_role}"
 
 st.markdown(f"""
     <div class="hero-banner">
@@ -397,82 +458,101 @@ st.markdown(f"""
     </div>
 """, unsafe_allow_html=True)
 
-c1, c2, c3 = st.columns(3)
-with c1:
-    stat_karti_ciz("Moral", st.session_state.stats['Moral'], "😊")
-with c2:
-    stat_karti_ciz("Verimlilik", st.session_state.stats['Verimlilik'], "📈")
-with c3:
-    stat_karti_ciz("Güven", st.session_state.stats['Güven'], "🤝")
+# Ana içerik (sol) + Karar Yolculuğu (sağ) sütunları
+col_main, col_side = st.columns([2.6, 1])
 
-st.write("")
+with col_main:
+    c1, c2, c3 = st.columns(3)
+    with c1: stat_karti_ciz("Moral", st.session_state.stats['Moral'], "😊")
+    with c2: stat_karti_ciz("Verimlilik", st.session_state.stats['Verimlilik'], "📈")
+    with c3: stat_karti_ciz("Güven", st.session_state.stats['Güven'], "🤝")
 
-if st.session_state.tur <= 10:
-    if st.session_state.current_scenario is None:
-        with st.spinner("Yeni liderlik vakası hazırlanıyor..."):
-            st.session_state.current_scenario = kriz_uret()
+    st.write("")
 
-    current = st.session_state.current_scenario
+    if st.session_state.tur <= 10:
+        if st.session_state.current_scenario is None:
+            with st.spinner("Yeni liderlik vakası hazırlanıyor..."):
+                st.session_state.current_scenario = kriz_uret()
 
-    st.markdown(f'<div class="vaka-badge">VAKA {st.session_state.tur} / 10</div>', unsafe_allow_html=True)
-    st.markdown(f'<div class="olay-box">{current["olay"]}</div>', unsafe_allow_html=True)
+        current = st.session_state.current_scenario
 
-    st.markdown("##### Liderlik Yaklaşımınız:")
+        st.markdown(f'<div class="vaka-badge">VAKA {st.session_state.tur} / 10</div>', unsafe_allow_html=True)
+        st.markdown(f'<div class="olay-box">{current["olay"]}</div>', unsafe_allow_html=True)
 
-    cb1, cb2 = st.columns(2)
-    for i, s in enumerate(current['secenekler']):
-        with (cb1 if i % 2 == 0 else cb2):
-            if st.button(s['metin'], key=f"v_{st.session_state.tur}_{i}"):
-                for k, v in s['etki'].items():
-                    st.session_state.stats[k] = max(0, min(100, st.session_state.stats[k] + v))
+        st.markdown("##### Liderlik Yaklaşımınız:")
 
-                st.session_state.secim_gecmisi.append(s.get('tip', 'Belirsiz'))
+        cb1, cb2 = st.columns(2)
+        for i, s in enumerate(current['secenekler']):
+            with (cb1 if i % 2 == 0 else cb2):
+                if st.button(s['metin'], key=f"v_{st.session_state.tur}_{i}"):
+                    for k, v in s['etki'].items():
+                        st.session_state.stats[k] = max(0, min(100, st.session_state.stats[k] + v))
 
-                st.session_state.tur += 1
-                st.session_state.current_scenario = None
-                st.rerun()
+                    st.session_state.secim_gecmisi.append(s.get('tip', 'Belirsiz'))
 
-else:
-    st.balloons()
-    st.success(f"🏁 Tebrikler {st.session_state.user_name}, 10 Günlük Liderlik Maratonunu Tamamladınız!")
+                    # Sağ paneldeki karar yolculuğu için kayıt ekle
+                    st.session_state.karar_gecmisi.append({
+                        "tur": st.session_state.tur,
+                        "metin": s['metin'],
+                        "tip": s.get('tip', 'Belirsiz'),
+                        "etki": s['etki']
+                    })
 
-    ortalama, baskin_tip, tip_metni, metrik_yorumlari, tip_sayaci = final_rapor_uret(
-        st.session_state.stats, st.session_state.secim_gecmisi
-    )
+                    st.session_state.tur += 1
+                    st.session_state.current_scenario = None
+                    st.rerun()
 
-    st.markdown(f"""
-        <div class="rapor-kart" style="text-align:center;">
-            <div class="stat-label">FİNAL LİDERLİK ENDEKSİ</div>
-            <div style="font-size:3em; font-weight:800; color:{renk_belirle(int(ortalama))};">%{int(ortalama)}</div>
-            <div style="color:#6b7280;">Bu skor, Moral + Verimlilik + Güven ortalamasıdır.</div>
-        </div>
-    """, unsafe_allow_html=True)
-
-    st.write("### 📊 Metrik Bazlı Detaylı Analiz")
-    for metrik, yorum in metrik_yorumlari.items():
-        st.markdown(f'<div class="rapor-kart">{yorum}</div>', unsafe_allow_html=True)
-
-    st.write("### 🧭 Baskın Liderlik Tarzınız")
-    st.markdown(f"""
-        <div class="rapor-kart">
-            <b>{baskin_tip}</b> ({tip_sayaci.get(baskin_tip, 0)}/10 kararınızda bu yaklaşımı sergilediniz)<br><br>
-            {tip_metni}
-        </div>
-    """, unsafe_allow_html=True)
-
-    st.write("### 📈 Tüm Kararlarınızın Dağılımı")
-    for tip, sayi in tip_sayaci.items():
-        st.write(f"**{tip}** — {sayi} kez")
-        st.progress(sayi / 10)
-
-    st.write("---")
-    if ortalama > 75:
-        st.markdown('<div class="rapor-kart">💎 <b>Genel Değerlendirme:</b> Dengeleri harika koruyan, stratejik bir lidersiniz.</div>', unsafe_allow_html=True)
-    elif ortalama > 50:
-        st.markdown('<div class="rapor-kart">📈 <b>Genel Değerlendirme:</b> Sonuç odaklısınız ama insan faktörüne biraz daha ağırlık vermelisiniz.</div>', unsafe_allow_html=True)
     else:
-        st.markdown('<div class="rapor-kart">⚠️ <b>Genel Değerlendirme:</b> Kararlarınızın uzun vadeli etkilerini daha dikkatli tartmalısınız.</div>', unsafe_allow_html=True)
+        st.balloons()
+        st.success(f"🏁 Tebrikler {st.session_state.user_name}, 10 Günlük Liderlik Maratonunu Tamamladınız!")
 
-    if st.button("Simülasyonu Baştan Başlat"):
-        st.session_state.clear()
-        st.rerun()
+        ortalama, baskin_tip, tip_metni, metrik_yorumlari, tip_sayaci = final_rapor_uret(
+            st.session_state.stats, st.session_state.secim_gecmisi
+        )
+
+        st.markdown(f"""
+            <div class="rapor-kart" style="text-align:center;">
+                <div class="stat-label">FİNAL LİDERLİK ENDEKSİ</div>
+                <div style="font-size:3em; font-weight:800; color:{renk_belirle(int(ortalama))};">%{int(ortalama)}</div>
+                <div style="color:#6b7280;">Bu skor, Moral + Verimlilik + Güven ortalamasıdır.</div>
+            </div>
+        """, unsafe_allow_html=True)
+
+        st.write("### 📊 Metrik Bazlı Detaylı Analiz")
+        for metrik, yorum in metrik_yorumlari.items():
+            st.markdown(f'<div class="rapor-kart">{yorum}</div>', unsafe_allow_html=True)
+
+        st.write("### 🧭 Baskın Liderlik Tarzınız")
+        st.markdown(f"""
+            <div class="rapor-kart">
+                <b>{baskin_tip}</b> ({tip_sayaci.get(baskin_tip, 0)}/10 kararınızda bu yaklaşımı sergilediniz)<br><br>
+                {tip_metni}
+            </div>
+        """, unsafe_allow_html=True)
+
+        st.write("### 📈 Tüm Kararlarınızın Dağılımı")
+        for tip, sayi in tip_sayaci.items():
+            st.write(f"**{tip}** — {sayi} kez")
+            st.progress(sayi / 10)
+
+        st.write("---")
+        if ortalama > 75:
+            st.markdown('<div class="rapor-kart">💎 <b>Genel Değerlendirme:</b> Dengeleri harika koruyan, stratejik bir lidersiniz.</div>', unsafe_allow_html=True)
+        elif ortalama > 50:
+            st.markdown('<div class="rapor-kart">📈 <b>Genel Değerlendirme:</b> Sonuç odaklısınız ama insan faktörüne biraz daha ağırlık vermelisiniz.</div>', unsafe_allow_html=True)
+        else:
+            st.markdown('<div class="rapor-kart">⚠️ <b>Genel Değerlendirme:</b> Kararlarınızın uzun vadeli etkilerini daha dikkatli tartmalısınız.</div>', unsafe_allow_html=True)
+
+        if st.button("Simülasyonu Baştan Başlat"):
+            st.session_state.clear()
+            st.rerun()
+
+# --- SAĞ PANEL: KARAR YOLCULUĞU ---
+with col_side:
+    st.markdown('<div class="journey-header">📜 Karar Yolculuğunuz</div>', unsafe_allow_html=True)
+
+    if not st.session_state.karar_gecmisi:
+        st.markdown('<div class="empty-journey">Henüz bir karar vermediniz.<br>İlk kararınızı verdiğinizde burada görünecek.</div>', unsafe_allow_html=True)
+    else:
+        for kayit in st.session_state.karar_gecmisi:
+            karar_kartı_ciz(kayit)
