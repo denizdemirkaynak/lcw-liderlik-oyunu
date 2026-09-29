@@ -385,43 +385,44 @@ def kriz_uret():
     onceki_karar = st.session_state.karar_gecmisi[-1] if st.session_state.karar_gecmisi else None
     baglanti_ozeti = onceki_karar_ozeti_uret(onceki_karar)
 
-    # --- Karakter seç (yeni ya da tekrarlayan) ---
     karakter, yeni_mi = karakter_sec_veya_uret(departman)
     if yeni_mi:
-        karakter_bilgisi = f"""Senaryoda YENİ bir karakter tanıt: {karakter['isim']} ({karakter['rol']}). 
-        Kişilik özelliği: {karakter['kisilik']}. Bu karakteri ismiyle anarak hikayeye dahil et."""
+        karakter_bilgisi = "Senaryoda YENİ bir karakter tanıt: " + karakter['isim'] + " (" + karakter['rol'] + "). Kişilik özelliği: " + karakter['kisilik'] + ". Bu karakteri ismiyle anarak hikayeye dahil et."
     else:
         gecmis_notu = "; ".join(karakter['gecmis']) if karakter['gecmis'] else "henüz belirgin bir geçmişiniz yok"
-        iliski_durumu = "gayet iyi ve güvene dayalı" if karakter['iliski'] >= 65 else ("gergin ve mesafeli" if karakter['iliski'] <= 35 else "orta seviyede, ne çok iyi ne çok kötü")
-        karakter_bilgisi = f"""Senaryoda DAHA ÖNCE TANIŞTIĞINIZ şu karakteri tekrar kullan: {karakter['isim']} ({karakter['rol']}, kişilik: {karakter['kisilik']}). 
-        Bu karakterle aranızdaki ilişki şu an {iliski_durumu} durumda. Geçmişte yaşananlar: {gecmis_notu}. 
-        Yeni senaryoyu bu karakterle olan ilişkinizin doğal bir devamı gibi kurgula."""
+        if karakter['iliski'] >= 65:
+            iliski_durumu = "gayet iyi ve güvene dayalı"
+        elif karakter['iliski'] <= 35:
+            iliski_durumu = "gergin ve mesafeli"
+        else:
+            iliski_durumu = "orta seviyede, ne çok iyi ne çok kötü"
+        karakter_bilgisi = ("Senaryoda DAHA ÖNCE TANIŞTIĞINIZ şu karakteri tekrar kullan: " + karakter['isim'] + " (" + karakter['rol'] +
+                             ", kişilik: " + karakter['kisilik'] + "). Bu karakterle aranızdaki ilişki şu an " + iliski_durumu +
+                             " durumda. Geçmişte yaşananlar: " + gecmis_notu + ". Yeni senaryoyu bu karakterle olan ilişkinizin doğal bir devamı gibi kurgula.")
 
     baglanti_talimati = ""
     if baglanti_ozeti:
-        baglanti_talimati = f"""
-        DEVAMLILIK BİLGİSİ: {baglanti_ozeti}
-        Yeni senaryonun İLK CÜMLESİNDE, bu önceki kararın doğal bir yansımasını hikayenin doğal bir parçası olarak anlat. 
-        ASLA "Moral", "Verimlilik", "Güven" gibi oyun terimlerini doğrudan kullanma; gerçekçi, insani bir anlatım kullan.
-        """
+        baglanti_talimati = ("DEVAMLILIK BİLGİSİ: " + baglanti_ozeti +
+            " Yeni senaryonun İLK CÜMLESİNDE, bu önceki kararın doğal bir yansımasını hikayenin doğal bir parçası olarak anlat. "
+            "ASLA Moral, Verimlilik, Güven gibi oyun terimlerini doğrudan kullanma; gerçekçi, insani bir anlatım kullan.")
 
-    # --- Rastgele seçenek sayısı (2, 3 veya 4) ---
     secenek_sayisi = random.choices([2, 3, 4], weights=[0.25, 0.35, 0.4])[0]
     secilecek_tipler = random.sample(TUM_TIPLER, secenek_sayisi)
 
-    senaryo_turu_talimati = ""
     if secenek_sayisi == 2:
-        senaryo_turu_talimati = """Bu sefer KESKİN BİR İKİLEM senaryosu yaz (örn: "yap ya da yapma", "onayla ya da reddet" tarzı net bir karar anı). 
-        Sadece 2 seçenek olsun, bunlar birbirine net bir şekilde zıt olsun."""
+        senaryo_turu_talimati = ("Bu sefer KESKİN BİR İKİLEM senaryosu yaz (yap ya da yapma, onayla ya da reddet tarzı net bir karar anı). "
+                                  "Sadece 2 seçenek olsun, bunlar birbirine net bir şekilde zıt olsun.")
     elif secenek_sayisi == 3:
         senaryo_turu_talimati = "3 farklı, nüanslı seçenek sun."
     else:
         senaryo_turu_talimati = "4 farklı, nüanslı seçenek sun."
 
-    ornek_secenekler = ",
-".join([
-        f'{{"metin": "...", "etki": {{"Moral": 0, "Verimlilik": 0, "Güven": 0}}, "tip": "{t}"}}' for t in secilecek_tipler
-    ])
+    ornek_satirlar = []
+    for t in secilecek_tipler:
+        satir = '{"metin": "...", "etki": {"Moral": 0, "Verimlilik": 0, "Güven": 0}, "tip": "' + t + '"}'
+        ornek_satirlar.append(satir)
+    ayirici = "," + chr(10)
+    ornek_secenekler = ayirici.join(ornek_satirlar)
 
     try:
         istek = f"""Sen üst düzey, tecrübeli ve son derece YARATICI bir LCW (LC Waikiki) Liderlik Koçusun. 
@@ -429,7 +430,7 @@ def kriz_uret():
         Bu senaryo özellikle "{departman}" departmanı bağlamında olmalı ve bu departmanın gerçek iş süreçlerini yansıtmalı.
         Konu teması: {tema}. 
         Bağlam/ortam: {baglam}. 
-        
+
         {karakter_bilgisi}
 
         Daha önce şu konular kullanıldı, bunları ve benzer olay örgülerini KESİNLİKLE TEKRARLAMA: {onceki_ozet}.
@@ -486,6 +487,7 @@ def kriz_uret():
         secim_copy = {"olay": secim["olay"], "secenekler": [dict(s) for s in secim["secenekler"]], "aktif_karakter": None}
         random.shuffle(secim_copy['secenekler'])
         return secim_copy
+
 
 
 def hedef_uret():
