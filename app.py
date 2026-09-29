@@ -4,22 +4,106 @@ import json
 import random
 from collections import Counter
 
-# --- KURUMSAL AYARLAR ---
-st.set_page_config(page_title="LCW Liderlik Simülasyonu Pro", layout="wide")
+# --- SAYFA AYARLARI ---
+st.set_page_config(page_title="LCW Liderlik Simülasyonu", page_icon="💙", layout="wide")
 
+# --- MODERN CSS TASARIMI ---
 st.markdown("""
     <style>
+    @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&display=swap');
+    
+    html, body, [class*="css"] { font-family: 'Poppins', sans-serif; }
+    
+    /* Ana arkaplan */
+    .stApp { background-color: #f5f7fa; }
+    
+    /* Streamlit varsayılan padding azaltma */
+    .block-container { padding-top: 2rem; padding-bottom: 3rem; max-width: 1100px; }
+    
+    /* HERO BANNER */
+    .hero-banner {
+        background: linear-gradient(135deg, #0054a6 0%, #003d7a 100%);
+        padding: 40px 50px;
+        border-radius: 20px;
+        margin-bottom: 30px;
+        box-shadow: 0 10px 30px rgba(0, 84, 166, 0.25);
+    }
+    .hero-banner h1 {
+        color: white; font-size: 2.4em; font-weight: 800; margin: 0;
+    }
+    .hero-banner p {
+        color: #cfe0f5; font-size: 1.1em; margin-top: 8px; font-weight: 300;
+    }
+    
+    /* İSTATİSTİK KARTLARI */
+    .stat-card {
+        background: white; border-radius: 16px; padding: 20px 24px;
+        box-shadow: 0 4px 15px rgba(0,0,0,0.06);
+        border-left: 5px solid #0054a6;
+        margin-bottom: 10px;
+    }
+    .stat-label { font-size: 0.85em; color: #6b7280; font-weight: 500; text-transform: uppercase; letter-spacing: 0.5px; }
+    .stat-value { font-size: 2em; font-weight: 700; color: #1f2937; margin: 4px 0; }
+    
+    .progress-outer {
+        background-color: #e5e7eb; border-radius: 20px; height: 10px; width: 100%; overflow: hidden; margin-top: 8px;
+    }
+    .progress-inner {
+        height: 100%; border-radius: 20px; transition: width 0.5s ease;
+    }
+    
+    /* VAKA ROZETİ */
+    .vaka-badge {
+        display: inline-block; background: #eaf1fb; color: #0054a6; 
+        padding: 6px 18px; border-radius: 30px; font-weight: 600; 
+        font-size: 0.9em; margin-bottom: 15px;
+    }
+    
+    /* OLAY KUTUSU */
+    .olay-box {
+        background: white; border-radius: 16px; padding: 28px 30px;
+        box-shadow: 0 4px 20px rgba(0,0,0,0.07);
+        font-size: 1.15em; line-height: 1.6; color: #1f2937;
+        margin-bottom: 25px; border-top: 4px solid #0054a6;
+    }
+    
+    /* BUTONLAR */
     .stButton>button { 
-        width: 100%; border-radius: 8px; height: 7em; 
+        width: 100%; border-radius: 14px; min-height: 6.5em; 
         background-color: #ffffff; color: #0054a6; 
-        border: 1px solid #d1d3d4; font-weight: 500;
-        white-space: normal; padding: 10px; font-size: 15px;
+        border: 1.5px solid #e0e4e8; font-weight: 500;
+        white-space: normal; padding: 14px; font-size: 15px;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+        transition: all 0.25s ease;
+        text-align: left;
     }
-    .stButton>button:hover { border-color: #0054a6; background-color: #f8f9fa; color: #0054a6; }
-    .baslat-buton>button {
-        height: 3.5em; background-color: #0054a6; color: white; font-size: 18px;
+    .stButton>button:hover { 
+        border-color: #0054a6; background-color: #0054a6; color: white; 
+        transform: translateY(-3px);
+        box-shadow: 0 8px 20px rgba(0,84,166,0.25);
     }
-    .baslat-buton>button:hover { background-color: #003d7a; color: white; }
+    
+    /* FORM BAŞLAT BUTONU */
+    div[data-testid="stFormSubmitButton"] button {
+        background: linear-gradient(135deg, #0054a6, #003d7a);
+        color: white; font-weight: 700; font-size: 17px;
+        min-height: 3.2em; border: none;
+    }
+    div[data-testid="stFormSubmitButton"] button:hover {
+        background: linear-gradient(135deg, #003d7a, #0054a6);
+        color: white; transform: translateY(-2px);
+    }
+    
+    /* SIDEBAR */
+    section[data-testid="stSidebar"] { background-color: #ffffff; }
+    
+    h1, h2, h3 { font-weight: 700; color: #1f2937; }
+    
+    /* Final rapor kartları */
+    .rapor-kart {
+        background: white; border-radius: 16px; padding: 22px 26px;
+        box-shadow: 0 4px 15px rgba(0,0,0,0.06); margin-bottom: 16px;
+    }
     </style>
     """, unsafe_allow_html=True)
 
@@ -28,13 +112,7 @@ API_KEY = 'AQ.Ab8RN6LpvpinBuDLv3Qo6n0kLMOLt_fN6DWQX4rHkjAkYvKkCA'
 genai.configure(api_key=API_KEY)
 
 MODEL_ADI = 'gemini-1.5-flash'
-
-generation_config = {
-    "temperature": 1.4,
-    "top_p": 0.95,
-    "top_k": 40,
-}
-
+generation_config = {"temperature": 1.4, "top_p": 0.95, "top_k": 40}
 model = genai.GenerativeModel(MODEL_ADI, generation_config=generation_config)
 
 # --- SİSTEM HAFIZASI ---
@@ -221,6 +299,28 @@ def final_rapor_uret(stats, secim_gecmisi):
     return ortalama, baskin_tip, tip_aciklamalari[baskin_tip], metrik_yorumlari, tip_sayaci
 
 
+def renk_belirle(deger):
+    if deger >= 70:
+        return "#16a34a"  # yeşil
+    elif deger >= 40:
+        return "#f59e0b"  # turuncu
+    else:
+        return "#dc2626"  # kırmızı
+
+
+def stat_karti_ciz(label, deger, icon):
+    renk = renk_belirle(deger)
+    st.markdown(f"""
+        <div class="stat-card" style="border-left-color:{renk};">
+            <div class="stat-label">{icon} {label}</div>
+            <div class="stat-value">%{deger}</div>
+            <div class="progress-outer">
+                <div class="progress-inner" style="width:{deger}%; background:{renk};"></div>
+            </div>
+        </div>
+    """, unsafe_allow_html=True)
+
+
 # --- SOL MENÜ: TEŞHİS PANELİ ---
 with st.sidebar:
     st.header("🔧 Sistem Durumu")
@@ -242,23 +342,25 @@ with st.sidebar:
 # ============  1. AŞAMA: KARŞILAMA (ONBOARDING) EKRANI  ==
 # ==========================================================
 if not st.session_state.started:
-    st.title("💙 LC WAIKIKI LİDERLİK SİMÜLASYONU")
-    st.write("---")
+
+    st.markdown("""
+        <div class="hero-banner">
+            <h1>💙 LC Waikiki Liderlik Simülasyonu</h1>
+            <p>Gerçek yönetim senaryolarıyla liderlik becerilerinizi test edin.</p>
+        </div>
+    """, unsafe_allow_html=True)
 
     col1, col2 = st.columns([1.2, 1])
 
     with col1:
-        st.subheader("Hoş Geldiniz! 👋")
+        st.subheader("Nasıl Oynanır? 🎯")
         st.markdown("""
-        Bu simülasyonda, bir **LC Waikiki mağaza/ekip yöneticisi** rolüne bürüneceksiniz.
+        - Karşınıza toplam **10 farklı liderlik vakası** çıkacak.  
+        - Her vakada **4 farklı karar seçeneği** sunulacak.  
+        - Verdiğiniz her karar; **Moral, Verimlilik ve Güven** skorlarınızı etkileyecek.  
+        - Sonunda size özel bir **"Liderlik Karnesi"** hazırlanacak.
 
-        🎯 **Nasıl Oynanır?**
-        - Karşınıza toplam **10 farklı liderlik vakası** çıkacak.
-        - Her vakada **4 farklı karar seçeneği** sunulacak.
-        - Verdiğiniz her karar; **Moral, Verimlilik ve Güven** skorlarınızı etkileyecek.
-        - Sonunda size özel bir **"Liderlik Karnesi"** hazırlanacak: baskın liderlik tarzınızı ve gelişim alanlarınızı göreceksiniz.
-
-        ⚠️ Unutmayın: Hiçbir seçenek mükemmel değildir. Gerçek liderlik, doğru dengeleri kurmaktır.
+        ⚠️ *Unutmayın: Hiçbir seçenek mükemmel değildir. Gerçek liderlik, doğru dengeleri kurmaktır.*
         """)
 
     with col2:
@@ -266,7 +368,6 @@ if not st.session_state.started:
         with st.form("giris_formu"):
             ad_soyad = st.text_input("Ad Soyad *", placeholder="Örn: Deniz Demirkaynak")
             gorev = st.text_input("Görev / Departman (opsiyonel)", placeholder="Örn: Mağaza Müdürü")
-
             gonder = st.form_submit_button("🚀 Simülasyonu Başlat")
 
             if gonder:
@@ -278,25 +379,33 @@ if not st.session_state.started:
                     st.session_state.started = True
                     st.rerun()
 
-    st.stop()  # Karşılama ekranı bitmeden aşağıdaki oyun koduna geçilmesin
+    st.stop()
 
 
 # ==========================================================
 # ==================  2. AŞAMA: OYUN EKRANI  ===============
 # ==========================================================
-st.title("💙 LC WAIKIKI LİDERLİK SİMÜLASYONU")
 
-ust_bilgi = f"👤 **{st.session_state.user_name}**"
+ust_bilgi = f"👤 {st.session_state.user_name}"
 if st.session_state.user_role:
-    ust_bilgi += f" — {st.session_state.user_role}"
-st.caption(ust_bilgi)
+    ust_bilgi += f" &nbsp;•&nbsp; {st.session_state.user_role}"
 
-col_stats = st.columns(3)
-metrics = list(st.session_state.stats.items())
-for i, (k, v) in enumerate(metrics):
-    col_stats[i].metric(k, f"%{v}")
+st.markdown(f"""
+    <div class="hero-banner">
+        <h1>💙 LC Waikiki Liderlik Simülasyonu</h1>
+        <p>{ust_bilgi}</p>
+    </div>
+""", unsafe_allow_html=True)
 
-st.write("---")
+c1, c2, c3 = st.columns(3)
+with c1:
+    stat_karti_ciz("Moral", st.session_state.stats['Moral'], "😊")
+with c2:
+    stat_karti_ciz("Verimlilik", st.session_state.stats['Verimlilik'], "📈")
+with c3:
+    stat_karti_ciz("Güven", st.session_state.stats['Güven'], "🤝")
+
+st.write("")
 
 if st.session_state.tur <= 10:
     if st.session_state.current_scenario is None:
@@ -305,14 +414,14 @@ if st.session_state.tur <= 10:
 
     current = st.session_state.current_scenario
 
-    st.subheader(f"VAKA {st.session_state.tur} / 10")
-    st.info(current['olay'])
+    st.markdown(f'<div class="vaka-badge">VAKA {st.session_state.tur} / 10</div>', unsafe_allow_html=True)
+    st.markdown(f'<div class="olay-box">{current["olay"]}</div>', unsafe_allow_html=True)
 
-    st.write("#### Liderlik Yaklaşımınız:")
+    st.markdown("##### Liderlik Yaklaşımınız:")
 
-    c1, c2 = st.columns(2)
+    cb1, cb2 = st.columns(2)
     for i, s in enumerate(current['secenekler']):
-        with (c1 if i % 2 == 0 else c2):
+        with (cb1 if i % 2 == 0 else cb2):
             if st.button(s['metin'], key=f"v_{st.session_state.tur}_{i}"):
                 for k, v in s['etki'].items():
                     st.session_state.stats[k] = max(0, min(100, st.session_state.stats[k] + v))
@@ -331,29 +440,38 @@ else:
         st.session_state.stats, st.session_state.secim_gecmisi
     )
 
-    st.metric("Final Liderlik Endeksiniz", f"%{int(ortalama)}")
-    st.caption("Bu skor, 3 metriğinizin (Moral + Verimlilik + Güven) basit ortalamasıdır.")
+    st.markdown(f"""
+        <div class="rapor-kart" style="text-align:center;">
+            <div class="stat-label">FİNAL LİDERLİK ENDEKSİ</div>
+            <div style="font-size:3em; font-weight:800; color:{renk_belirle(int(ortalama))};">%{int(ortalama)}</div>
+            <div style="color:#6b7280;">Bu skor, Moral + Verimlilik + Güven ortalamasıdır.</div>
+        </div>
+    """, unsafe_allow_html=True)
 
     st.write("### 📊 Metrik Bazlı Detaylı Analiz")
     for metrik, yorum in metrik_yorumlari.items():
-        st.markdown(yorum)
+        st.markdown(f'<div class="rapor-kart">{yorum}</div>', unsafe_allow_html=True)
 
     st.write("### 🧭 Baskın Liderlik Tarzınız")
-    st.markdown(f"**{baskin_tip}** ({tip_sayaci.get(baskin_tip, 0)}/10 kararınızda bu yaklaşımı sergilediniz)")
-    st.markdown(tip_metni)
+    st.markdown(f"""
+        <div class="rapor-kart">
+            <b>{baskin_tip}</b> ({tip_sayaci.get(baskin_tip, 0)}/10 kararınızda bu yaklaşımı sergilediniz)<br><br>
+            {tip_metni}
+        </div>
+    """, unsafe_allow_html=True)
 
     st.write("### 📈 Tüm Kararlarınızın Dağılımı")
     for tip, sayi in tip_sayaci.items():
-        st.write(f"- {tip}: {sayi} kez")
+        st.write(f"**{tip}** — {sayi} kez")
         st.progress(sayi / 10)
 
     st.write("---")
     if ortalama > 75:
-        st.write("💎 **Genel Değerlendirme:** Dengeleri harika koruyan, stratejik bir lidersiniz.")
+        st.markdown('<div class="rapor-kart">💎 <b>Genel Değerlendirme:</b> Dengeleri harika koruyan, stratejik bir lidersiniz.</div>', unsafe_allow_html=True)
     elif ortalama > 50:
-        st.write("📈 **Genel Değerlendirme:** Sonuç odaklısınız ama insan faktörüne biraz daha ağırlık vermelisiniz.")
+        st.markdown('<div class="rapor-kart">📈 <b>Genel Değerlendirme:</b> Sonuç odaklısınız ama insan faktörüne biraz daha ağırlık vermelisiniz.</div>', unsafe_allow_html=True)
     else:
-        st.write("⚠️ **Genel Değerlendirme:** Kararlarınızın uzun vadeli etkilerini daha dikkatli tartmalısınız. Özellikle en düşük skorlu metriğinize odaklanın.")
+        st.markdown('<div class="rapor-kart">⚠️ <b>Genel Değerlendirme:</b> Kararlarınızın uzun vadeli etkilerini daha dikkatli tartmalısınız.</div>', unsafe_allow_html=True)
 
     if st.button("Simülasyonu Baştan Başlat"):
         st.session_state.clear()
