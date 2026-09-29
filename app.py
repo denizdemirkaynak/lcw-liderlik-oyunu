@@ -59,10 +59,10 @@ def kriz_uret():
             res_text = res_text.split("```")[1].split("```")[0].strip()
             
         data = json.loads(res_text)
-        # ŞIKLARI KARIŞTIR (Shuffling)
         random.shuffle(data['secenekler'])
         return data
-    except:
+    except Exception as e:
+        st.error(f"HATA DETAYI: {str(e)}")  # <-- GEÇİCİ OLARAK BUNU EKLEDİK
         return {"olay": "Bağlantı hatası. Lütfen bir sonraki tura geçin.", "secenekler": []}
 
 # --- ARAYÜZ ---
