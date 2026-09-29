@@ -16,6 +16,10 @@ st.markdown("""
         white-space: normal; padding: 10px; font-size: 15px;
     }
     .stButton>button:hover { border-color: #0054a6; background-color: #f8f9fa; color: #0054a6; }
+    .baslat-buton>button {
+        height: 3.5em; background-color: #0054a6; color: white; font-size: 18px;
+    }
+    .baslat-buton>button:hover { background-color: #003d7a; color: white; }
     </style>
     """, unsafe_allow_html=True)
 
@@ -23,13 +27,10 @@ st.markdown("""
 API_KEY = 'AQ.Ab8RN6LpvpinBuDLv3Qo6n0kLMOLt_fN6DWQX4rHkjAkYvKkCA'
 genai.configure(api_key=API_KEY)
 
-# 🔧 Buradan modeli değiştirebilirsiniz:
-# 'gemini-1.5-flash'  -> Hızlı, ücretsiz limitleri geniş, orta yaratıcılık
-# 'gemini-1.5-pro'    -> Daha yaratıcı, daha "insancıl" senaryolar ama daha yavaş
 MODEL_ADI = 'gemini-1.5-flash'
 
 generation_config = {
-    "temperature": 1.4,   # Yaratıcılığı artırır (0.0 - 2.0 arası, ne kadar yüksekse o kadar özgün/rastgele)
+    "temperature": 1.4,
     "top_p": 0.95,
     "top_k": 40,
 }
@@ -37,6 +38,12 @@ generation_config = {
 model = genai.GenerativeModel(MODEL_ADI, generation_config=generation_config)
 
 # --- SİSTEM HAFIZASI ---
+if 'started' not in st.session_state:
+    st.session_state.started = False
+if 'user_name' not in st.session_state:
+    st.session_state.user_name = ""
+if 'user_role' not in st.session_state:
+    st.session_state.user_role = ""
 if 'stats' not in st.session_state:
     st.session_state.stats = {'Moral': 60, 'Verimlilik': 60, 'Güven': 60}
 if 'tur' not in st.session_state:
@@ -48,19 +55,18 @@ if 'last_error' not in st.session_state:
 if 'ai_success_count' not in st.session_state:
     st.session_state.ai_success_count = 0
 if 'gecmis_konular' not in st.session_state:
-    st.session_state.gecmis_konular = []          # Tekrarı önlemek için önceki olay özetleri
+    st.session_state.gecmis_konular = []
 if 'secim_gecmisi' not in st.session_state:
-    st.session_state.secim_gecmisi = []           # Final analiz için hangi liderlik tipi seçildi
+    st.session_state.secim_gecmisi = []
 
 temalar = ["Performans Yönetimi", "Çalışan Bağlılığı", "Kriz Yönetimi", "Yenilikçilik",
            "Zor Kişiliklerle İletişim", "Etik İkilemler", "Mağaza Operasyonu", "Uzaktan Yönetim",
            "İşe Alım Kararları", "Terfi ve Adalet", "Müşteri Şikayeti Yönetimi", "Bütçe Kısıtlaması"]
 
-# Rastgele detay üretmek için (her senaryoyu daha "özgün" kılmak için)
 karakterler = ["yeni işe başlayan bir kasiyer", "10 yıllık kıdemli bir reyon sorumlusu",
                "stajyer bir çalışan", "vardiya amiri", "depo sorumlusu", "kıdemli bir mağaza müdür yardımcısı"]
 
-# --- YEDEK SENARYO HAVUZU (AI çalışmazsa devreye girer) ---
+# --- YEDEK SENARYO HAVUZU ---
 havuz = [
     {
         "olay": "Ekibinizdeki iki kıdemli çalışan, yeni bir iş süreci üzerinde fikir ayrılığı yaşıyor ve bu durum ofis huzurunu bozuyor.",
@@ -121,8 +127,6 @@ havuz = [
 def kriz_uret():
     tema = random.choice(temalar)
     karakter = random.choice(karakterler)
-
-    # Yapay zekaya son 3 konuyu hatırlatıp tekrarı engelliyoruz
     onceki_ozet = ", ".join(st.session_state.gecmis_konular[-3:]) if st.session_state.gecmis_konular else "yok"
 
     try:
@@ -160,7 +164,6 @@ def kriz_uret():
         data = json.loads(res_text)
         random.shuffle(data['secenekler'])
 
-        # Konuyu hafızaya ekle (tekrarı önlemek için)
         st.session_state.gecmis_konular.append(f"{tema} - {data['olay'][:50]}")
         st.session_state.last_error = None
         st.session_state.ai_success_count += 1
@@ -187,7 +190,6 @@ def final_rapor_uret(stats, secim_gecmisi):
         "Belirsiz": "Henüz yeterli veri toplanmadı."
     }
 
-    # Her metrik için ayrı yorum
     metrik_yorumlari = {}
     for metrik, deger in stats.items():
         if deger >= 75:
@@ -235,9 +237,59 @@ with st.sidebar:
         st.session_state.clear()
         st.rerun()
 
-# --- ARAYÜZ ---
+
+# ==========================================================
+# ============  1. AŞAMA: KARŞILAMA (ONBOARDING) EKRANI  ==
+# ==========================================================
+if not st.session_state.started:
+    st.title("💙 LC WAIKIKI LİDERLİK SİMÜLASYONU")
+    st.write("---")
+
+    col1, col2 = st.columns([1.2, 1])
+
+    with col1:
+        st.subheader("Hoş Geldiniz! 👋")
+        st.markdown("""
+        Bu simülasyonda, bir **LC Waikiki mağaza/ekip yöneticisi** rolüne bürüneceksiniz.
+
+        🎯 **Nasıl Oynanır?**
+        - Karşınıza toplam **10 farklı liderlik vakası** çıkacak.
+        - Her vakada **4 farklı karar seçeneği** sunulacak.
+        - Verdiğiniz her karar; **Moral, Verimlilik ve Güven** skorlarınızı etkileyecek.
+        - Sonunda size özel bir **"Liderlik Karnesi"** hazırlanacak: baskın liderlik tarzınızı ve gelişim alanlarınızı göreceksiniz.
+
+        ⚠️ Unutmayın: Hiçbir seçenek mükemmel değildir. Gerçek liderlik, doğru dengeleri kurmaktır.
+        """)
+
+    with col2:
+        st.subheader("📝 Katılımcı Bilgileri")
+        with st.form("giris_formu"):
+            ad_soyad = st.text_input("Ad Soyad *", placeholder="Örn: Deniz Demirkaynak")
+            gorev = st.text_input("Görev / Departman (opsiyonel)", placeholder="Örn: Mağaza Müdürü")
+
+            gonder = st.form_submit_button("🚀 Simülasyonu Başlat")
+
+            if gonder:
+                if ad_soyad.strip() == "":
+                    st.warning("Lütfen devam etmek için adınızı ve soyadınızı girin.")
+                else:
+                    st.session_state.user_name = ad_soyad.strip()
+                    st.session_state.user_role = gorev.strip()
+                    st.session_state.started = True
+                    st.rerun()
+
+    st.stop()  # Karşılama ekranı bitmeden aşağıdaki oyun koduna geçilmesin
+
+
+# ==========================================================
+# ==================  2. AŞAMA: OYUN EKRANI  ===============
+# ==========================================================
 st.title("💙 LC WAIKIKI LİDERLİK SİMÜLASYONU")
-st.caption("Yönetim kararlarınızın karmaşık etkilerini deneyimleyin.")
+
+ust_bilgi = f"👤 **{st.session_state.user_name}**"
+if st.session_state.user_role:
+    ust_bilgi += f" — {st.session_state.user_role}"
+st.caption(ust_bilgi)
 
 col_stats = st.columns(3)
 metrics = list(st.session_state.stats.items())
@@ -265,7 +317,6 @@ if st.session_state.tur <= 10:
                 for k, v in s['etki'].items():
                     st.session_state.stats[k] = max(0, min(100, st.session_state.stats[k] + v))
 
-                # Seçilen liderlik tipini kaydet (final rapor için)
                 st.session_state.secim_gecmisi.append(s.get('tip', 'Belirsiz'))
 
                 st.session_state.tur += 1
@@ -274,7 +325,7 @@ if st.session_state.tur <= 10:
 
 else:
     st.balloons()
-    st.success("🏁 10 Günlük Liderlik Maratonu Tamamlandı.")
+    st.success(f"🏁 Tebrikler {st.session_state.user_name}, 10 Günlük Liderlik Maratonunu Tamamladınız!")
 
     ortalama, baskin_tip, tip_metni, metrik_yorumlari, tip_sayaci = final_rapor_uret(
         st.session_state.stats, st.session_state.secim_gecmisi
