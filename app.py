@@ -1,8 +1,10 @@
 import streamlit as st
-import google.generativeai as genai
 import json
 import random
 from collections import Counter
+from google.oauth2 import service_account
+import vertexai
+from vertexai.generative_models import GenerativeModel, GenerationConfig
 
 # --- SAYFA AYARLARI ---
 st.set_page_config(page_title="LCW Liderlik Simülasyonu", page_icon="💙", layout="wide")
@@ -114,13 +116,18 @@ st.markdown("""
     </style>
     """, unsafe_allow_html=True)
 
-# --- API YAPILANDIRMASI ---
-API_KEY = 'AQ.Ab8RN6LpvpinBuDLv3Qo6n0kLMOLt_fN6DWQX4rHkjAkYvKkCA'
-genai.configure(api_key=API_KEY)
+# --- API YAPILANDIRMASI (VERTEX AI + SERVİS HESABI) ---
+sa_info = dict(st.secrets["gcp_service_account"])
+credentials = service_account.Credentials.from_service_account_info(sa_info)
 
-MODEL_ADI = 'gemini-1.5-flash'
-generation_config = {"temperature": 1.6, "top_p": 0.97, "top_k": 60}
-model = genai.GenerativeModel(MODEL_ADI, generation_config=generation_config)
+PROJECT_ID = sa_info["project_id"]
+LOCATION = "us-central1"
+
+vertexai.init(project=PROJECT_ID, location=LOCATION, credentials=credentials)
+
+MODEL_ADI = "gemini-1.5-flash-002"
+generation_config = GenerationConfig(temperature=1.6, top_p=0.97, top_k=60)
+model = GenerativeModel(MODEL_ADI, generation_config=generation_config)
 
 # --- DEPARTMAN TANIMLARI ---
 DEPARTMANLAR = {
