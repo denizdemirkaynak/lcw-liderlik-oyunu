@@ -1853,6 +1853,7 @@ ZINCIRLER = {
         {
             "id": "ik-z1",
             "baslangic": V(
+                "ik-z1-bas",
                 "İK iş ortağı Elif Demir, aynı terfiye iki güçlü adayın başvurduğunu söylüyor. Biri son yılın performansında, diğeri rolün kritik teknik becerisinde önde. Değerlendirme ölçütleri önceden yeterince açıklanmamış.",
                 "Elif Demir",
                 "İK iş ortağı",
@@ -1873,6 +1874,7 @@ ZINCIRLER = {
         {
             "id": "ik-z2",
             "baslangic": V(
+                "ik-z2-bas",
                 "İK uzmanı Zeynep Aydın, bir yöneticiyle ilgili anonim psikolojik taciz iddiası aldı. İddiada somut tarihler var; kimse suçun kanıtlandığını söylemiyor. Şikâyetçinin korunması ve yöneticinin adil değerlendirilmesi gerekiyor.",
                 "Zeynep Aydın",
                 "İK uzmanı",
@@ -1896,6 +1898,7 @@ ZINCIRLER = {
         {
             "id": "paz-z1",
             "baslangic": V(
+                "paz-z1-bas",
                 "Marka yöneticisi Selin Kaya, lansmana iki saat kala kampanya görselinde yanlış fiyat olduğunu fark etti. Reklam dosyası kanallara dağıtıldı; mağazalar doğru fiyatı kullanıyor. Görsellerin tamamını değiştirmek lansmanı geciktirecek.",
                 "Selin Kaya",
                 "marka yöneticisi",
@@ -1916,6 +1919,7 @@ ZINCIRLER = {
         {
             "id": "paz-z2",
             "baslangic": V(
+                "paz-z2-bas",
                 "Sosyal medya editörü Ece Arslan, iş birliği yapılan içerik üreticisinin tartışmalı paylaşımında marka etiketini gördü. Paylaşım doğrudan kampanyayla ilgili değil; sözleşmedeki davranış maddesinin uygulanıp uygulanmayacağı belirsiz.",
                 "Ece Arslan",
                 "sosyal medya editörü",
@@ -1939,6 +1943,7 @@ ZINCIRLER = {
         {
             "id": "fin-z1",
             "baslangic": V(
+                "fin-z1-bas",
                 "Finansal analist Ece Arslan, yönetim raporunda kârlılığı olduğundan yüksek gösteren hesaplama hatası buldu. Sunum yarın; düzeltme hedefin kaçtığını gösterecek. Hata onun hazırladığı tabloda oluşmuş ve Ece bunu kendisi size bildirdi.",
                 "Ece Arslan",
                 "finansal analist",
@@ -1959,6 +1964,7 @@ ZINCIRLER = {
         {
             "id": "fin-z2",
             "baslangic": V(
+                "fin-z2-bas",
                 "Muhasebe uzmanı Ayşe Yıldız, ödemesi bugün yapılacak faturanın daha önce ödenmiş teslimata ait olabileceğini söylüyor. Tedarikçi ödeme gecikirse yeni sevkiyatı durduracağını bildirmiş.",
                 "Ayşe Yıldız",
                 "muhasebe uzmanı",
@@ -1982,6 +1988,7 @@ ZINCIRLER = {
         {
             "id": "bt-z1",
             "baslangic": V(
+                "bt-z1-bas",
                 "Sistem yöneticisi Emre Yılmaz, güvenlik güncellemesinden sonra mağaza kasalarının bir bölümünün çalışmadığını bildirdi. Geri alma satışları açacak ancak kapatılan güvenlik açığını yeniden ortaya çıkarabilir.",
                 "Emre Yılmaz",
                 "sistem yöneticisi",
@@ -2002,6 +2009,7 @@ ZINCIRLER = {
         {
             "id": "bt-z2",
             "baslangic": V(
+                "bt-z2-bas",
                 "Siber güvenlik uzmanı Deren Aksoy, müşteri verisini etkileyebilecek bir açık buldu. Şu an ihlal kanıtı yok; çevrim içi servisi tamamen kapatmak satışları durduracak. Deren kanıtın korunması gerektiğini vurguluyor.",
                 "Deren Aksoy",
                 "siber güvenlik uzmanı",
@@ -2025,6 +2033,7 @@ ZINCIRLER = {
         {
             "id": "eti-z1",
             "baslangic": V(
+                "eti-z1-bas",
                 "Ürün içerik uzmanı Ece Arslan, tükenmiş bir montun stok eşitleme gecikmesiyle satılmaya devam ettiğini buldu. İlk incelemede 36 sipariş etkilenmiş olabilir; yeni stok tarihi kesin değil.",
                 "Ece Arslan",
                 "ürün içerik uzmanı",
@@ -2045,6 +2054,7 @@ ZINCIRLER = {
         {
             "id": "eti-z2",
             "baslangic": V(
+                "eti-z2-bas",
                 "Kargo koordinatörü Burak Şahin, taşıyıcının üç haftadır geciktiğini ve alternatif firmanın kapasitesinin siparişlerin yalnız yarısına yettiğini söylüyor. Müşteri hizmetleri talepleri artıyor.",
                 "Burak Şahin",
                 "kargo süreçleri koordinatörü",
