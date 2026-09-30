@@ -1808,6 +1808,7 @@ ZINCIRLER = {
         {
             "id": "sat-z1",
             "baslangic": V(
+                "sat-z1-bas",
                 "Kalite sorumlusu Selin Kaya, sezon ürünü kumaşının seri üretimde onaylı numuneden farklı olduğunu buldu. Tedarikçi teslim tarihini korumak için partinin kabulünü istiyor; mağazalar kampanya için ürün bekliyor.",
                 "Selin Kaya",
                 "kalite sorumlusu",
@@ -1828,6 +1829,7 @@ ZINCIRLER = {
         {
             "id": "sat-z2",
             "baslangic": V(
+                "sat-z2-bas",
                 "Kategori yöneticisi Ece Arslan, yeni tedarikçinin %12 düşük fiyat verdiğini; ancak zorunlu uygunluk belgelerinin eksik olduğunu söylüyor. Teklif 48 saat geçerli. Alternatif onaylı tedarikçi daha pahalı.",
                 "Ece Arslan",
                 "kategori yöneticisi",
