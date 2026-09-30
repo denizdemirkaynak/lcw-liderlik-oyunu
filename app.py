@@ -1,891 +1,2035 @@
-import streamlit as st
-import json
 import random
+import html
 from collections import Counter
-from google.oauth2 import service_account
-import vertexai
-from vertexai.generative_models import GenerativeModel, GenerationConfig
 
-# --- SAYFA AYARLARI ---
-st.set_page_config(page_title="LCW Liderlik Simülasyonu", page_icon="💙", layout="wide")
+import streamlit as st
 
-TOPLAM_VAKA = 10  # Oyun her zaman 10 vakadan oluşur
 
-# --- MODERN CSS TASARIMI ---
-st.markdown("""
+# ==========================================================
+# SAYFA AYARLARI
+# ==========================================================
+
+st.set_page_config(
+    page_title="LCW Liderlik Simülasyonu",
+    page_icon="💙",
+    layout="wide",
+)
+
+TOPLAM_VAKA = 10
+
+
+# ==========================================================
+# TASARIM
+# ==========================================================
+
+st.markdown(
+    """
     <style>
     @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&display=swap');
-    
-    html, body, [class*="css"] { font-family: 'Poppins', sans-serif; }
-    .stApp { background-color: #f5f7fa; }
-    .block-container { padding-top: 2rem; padding-bottom: 3rem; max-width: 1250px; }
-    
+
+    html, body, [class*="css"] {
+        font-family: 'Poppins', sans-serif;
+    }
+
+    .stApp {
+        background-color: #f5f7fa;
+    }
+
+    .block-container {
+        padding-top: 2rem;
+        padding-bottom: 3rem;
+        max-width: 1250px;
+    }
+
     .hero-banner {
         background: linear-gradient(135deg, #0054a6 0%, #003d7a 100%);
-        padding: 40px 50px; border-radius: 20px; margin-bottom: 20px;
+        padding: 40px 50px;
+        border-radius: 20px;
+        margin-bottom: 20px;
         box-shadow: 0 10px 30px rgba(0, 84, 166, 0.25);
     }
-    .hero-banner h1 { color: white; font-size: 2.4em; font-weight: 800; margin: 0; }
-    .hero-banner p { color: #cfe0f5; font-size: 1.1em; margin-top: 8px; font-weight: 300; }
-    
+
+    .hero-banner h1 {
+        color: white;
+        font-size: 2.4em;
+        font-weight: 800;
+        margin: 0;
+    }
+
+    .hero-banner p {
+        color: #cfe0f5;
+        font-size: 1.1em;
+        margin-top: 8px;
+        font-weight: 300;
+    }
+
     .stat-card {
-        background: white; border-radius: 16px; padding: 20px 24px;
-        box-shadow: 0 4px 15px rgba(0,0,0,0.06); border-left: 5px solid #0054a6; margin-bottom: 10px;
+        background: white;
+        border-radius: 16px;
+        padding: 20px 24px;
+        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.06);
+        border-left: 5px solid #0054a6;
+        margin-bottom: 10px;
     }
-    .stat-label { font-size: 0.85em; color: #6b7280; font-weight: 500; text-transform: uppercase; letter-spacing: 0.5px; }
-    .stat-value { font-size: 2em; font-weight: 700; color: #1f2937; margin: 4px 0; }
-    .progress-outer { background-color: #e5e7eb; border-radius: 20px; height: 10px; width: 100%; overflow: hidden; margin-top: 8px; }
-    .progress-inner { height: 100%; border-radius: 20px; transition: width 0.5s ease; }
-    
+
+    .stat-label {
+        font-size: 0.85em;
+        color: #6b7280;
+        font-weight: 500;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+
+    .stat-value {
+        font-size: 2em;
+        font-weight: 700;
+        color: #1f2937;
+        margin: 4px 0;
+    }
+
+    .progress-outer {
+        background-color: #e5e7eb;
+        border-radius: 20px;
+        height: 10px;
+        width: 100%;
+        overflow: hidden;
+        margin-top: 8px;
+    }
+
+    .progress-inner {
+        height: 100%;
+        border-radius: 20px;
+    }
+
     .vaka-badge {
-        display: inline-block; background: #eaf1fb; color: #0054a6; 
-        padding: 6px 18px; border-radius: 30px; font-weight: 600; font-size: 0.9em; margin-bottom: 15px;
+        display: inline-block;
+        background: #eaf1fb;
+        color: #0054a6;
+        padding: 6px 18px;
+        border-radius: 30px;
+        font-weight: 600;
+        font-size: 0.9em;
+        margin-bottom: 15px;
     }
+
     .dept-badge {
-        display: inline-block; background: #fef3c7; color: #92400e; 
-        padding: 6px 18px; border-radius: 30px; font-weight: 600; font-size: 0.85em; margin-bottom: 15px; margin-left: 8px;
+        display: inline-block;
+        background: #fef3c7;
+        color: #92400e;
+        padding: 6px 18px;
+        border-radius: 30px;
+        font-weight: 600;
+        font-size: 0.85em;
+        margin-bottom: 15px;
+        margin-left: 8px;
     }
+
     .karakter-badge {
-        display: inline-block; background: #ecfdf5; color: #047857; 
-        padding: 6px 18px; border-radius: 30px; font-weight: 600; font-size: 0.85em; margin-bottom: 15px; margin-left: 8px;
+        display: inline-block;
+        background: #ecfdf5;
+        color: #047857;
+        padding: 6px 18px;
+        border-radius: 30px;
+        font-weight: 600;
+        font-size: 0.85em;
+        margin-bottom: 15px;
+        margin-left: 8px;
     }
-    
+
     .olay-box {
-        background: white; border-radius: 16px; padding: 28px 30px;
-        box-shadow: 0 4px 20px rgba(0,0,0,0.07); font-size: 1.1em; line-height: 1.6;
-        color: #1f2937; margin-bottom: 25px; border-top: 4px solid #0054a6;
+        background: white;
+        border-radius: 16px;
+        padding: 28px 30px;
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.07);
+        font-size: 1.1em;
+        line-height: 1.6;
+        color: #1f2937;
+        margin-bottom: 25px;
+        border-top: 4px solid #0054a6;
     }
-    
-    .stButton>button { 
-        width: 100%; border-radius: 14px; height: auto !important; min-height: 6.5em; 
-        background-color: #ffffff; color: #0054a6; border: 1.5px solid #e0e4e8;
-        font-weight: 500; white-space: normal !important; padding: 16px; font-size: 14.5px;
-        box-shadow: 0 2px 8px rgba(0,0,0,0.04); transition: all 0.25s ease; text-align: left;
-        line-height: 1.45; overflow: visible !important; word-wrap: break-word;
+
+    .stButton > button {
+        width: 100%;
+        border-radius: 14px;
+        height: auto !important;
+        min-height: 6.5em;
+        background-color: #ffffff;
+        color: #0054a6;
+        border: 1.5px solid #e0e4e8;
+        font-weight: 500;
+        white-space: normal !important;
+        padding: 16px;
+        font-size: 14.5px;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+        transition: all 0.25s ease;
+        text-align: left;
+        line-height: 1.45;
+        overflow: visible !important;
+        word-wrap: break-word;
     }
+
     .stButton > button * {
         white-space: normal !important;
         overflow: visible !important;
         text-overflow: clip !important;
     }
-    .stButton>button:hover { 
-        border-color: #0054a6; background-color: #0054a6; color: white; 
-        transform: translateY(-3px); box-shadow: 0 8px 20px rgba(0,84,166,0.25);
+
+    .stButton > button:hover {
+        border-color: #0054a6;
+        background-color: #0054a6;
+        color: white;
+        transform: translateY(-3px);
+        box-shadow: 0 8px 20px rgba(0, 84, 166, 0.25);
     }
-    
+
     div[data-testid="stFormSubmitButton"] button {
         background: linear-gradient(135deg, #0054a6, #003d7a);
-        color: white; font-weight: 700; font-size: 17px; min-height: 3.2em; border: none;
+        color: white;
+        font-weight: 700;
+        font-size: 17px;
+        min-height: 3.2em;
+        border: none;
     }
+
     div[data-testid="stFormSubmitButton"] button:hover {
-        background: linear-gradient(135deg, #003d7a, #0054a6); color: white; transform: translateY(-2px);
+        background: linear-gradient(135deg, #003d7a, #0054a6);
+        color: white;
     }
-    
-    section[data-testid="stSidebar"] { background-color: #ffffff; }
-    h1, h2, h3 { font-weight: 700; color: #1f2937; }
-    
+
+    section[data-testid="stSidebar"] {
+        background-color: #ffffff;
+    }
+
+    h1, h2, h3 {
+        font-weight: 700;
+        color: #1f2937;
+    }
+
     .rapor-kart {
-        background: white; border-radius: 16px; padding: 22px 26px;
-        box-shadow: 0 4px 15px rgba(0,0,0,0.06); margin-bottom: 16px;
+        background: white;
+        border-radius: 16px;
+        padding: 22px 26px;
+        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.06);
+        margin-bottom: 16px;
     }
-    
+
     .journey-header {
-        background: white; border-radius: 12px; padding: 14px 18px; margin-bottom: 14px;
-        box-shadow: 0 2px 8px rgba(0,0,0,0.05); font-weight: 700; color: #0054a6; font-size: 1.05em;
+        background: white;
+        border-radius: 12px;
+        padding: 14px 18px;
+        margin-bottom: 14px;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+        font-weight: 700;
+        color: #0054a6;
+        font-size: 1.05em;
     }
+
     .history-card {
-        background: white; border-radius: 12px; padding: 14px 16px; margin-bottom: 12px;
-        box-shadow: 0 2px 8px rgba(0,0,0,0.05); border-left: 4px solid #0054a6; font-size: 0.85em;
+        background: white;
+        border-radius: 12px;
+        padding: 14px 16px;
+        margin-bottom: 12px;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+        border-left: 4px solid #0054a6;
+        font-size: 0.85em;
     }
-    .history-tur { font-weight: 700; color: #0054a6; font-size: 0.85em; margin-bottom: 4px; }
+
+    .history-tur {
+        font-weight: 700;
+        color: #0054a6;
+        font-size: 0.85em;
+        margin-bottom: 4px;
+    }
+
     .history-tip {
-        display: inline-block; padding: 2px 10px; border-radius: 20px; font-size: 0.72em;
-        font-weight: 600; color: white; margin-bottom: 6px;
+        display: inline-block;
+        padding: 2px 10px;
+        border-radius: 20px;
+        font-size: 0.72em;
+        font-weight: 600;
+        color: white;
+        margin-bottom: 6px;
     }
-    .history-metin { color: #4b5563; font-style: italic; font-size: 0.82em; margin-bottom: 8px; line-height: 1.4; }
-    .history-stat-row { display: flex; justify-content: space-between; font-size: 0.82em; margin-bottom: 3px; }
-    .stat-up { color: #16a34a; font-weight: 700; }
-    .stat-down { color: #dc2626; font-weight: 700; }
-    .stat-same { color: #9ca3af; font-weight: 600; }
-    .empty-journey { color: #9ca3af; font-size: 0.9em; text-align: center; padding: 20px 0; }
-    
+
+    .history-metin {
+        color: #4b5563;
+        font-style: italic;
+        font-size: 0.82em;
+        margin-bottom: 8px;
+        line-height: 1.4;
+    }
+
+    .history-stat-row {
+        display: flex;
+        justify-content: space-between;
+        font-size: 0.82em;
+        margin-bottom: 3px;
+    }
+
+    .stat-up {
+        color: #16a34a;
+        font-weight: 700;
+    }
+
+    .stat-down {
+        color: #dc2626;
+        font-weight: 700;
+    }
+
+    .stat-same {
+        color: #9ca3af;
+        font-weight: 600;
+    }
+
+    .empty-journey {
+        color: #9ca3af;
+        font-size: 0.9em;
+        text-align: center;
+        padding: 20px 0;
+    }
+
     .karakter-kart {
-        background: white; border-radius: 12px; padding: 12px 14px; margin-bottom: 10px;
-        box-shadow: 0 2px 8px rgba(0,0,0,0.05); border-left: 4px solid #047857; font-size: 0.82em;
+        background: white;
+        border-radius: 12px;
+        padding: 12px 14px;
+        margin-bottom: 10px;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+        border-left: 4px solid #047857;
+        font-size: 0.82em;
     }
     </style>
-    """, unsafe_allow_html=True)
+    """,
+    unsafe_allow_html=True,
+)
 
-# --- API YAPILANDIRMASI (VERTEX AI + SERVİS HESABI) ---
-sa_info = dict(st.secrets["gcp_service_account"])
-credentials = service_account.Credentials.from_service_account_info(sa_info)
 
-PROJECT_ID = sa_info["project_id"]
-LOCATION = "us-central1"
+# ==========================================================
+# DEPARTMANLAR
+# ==========================================================
 
-vertexai.init(project=PROJECT_ID, location=LOCATION, credentials=credentials)
-
-MODEL_ADI = "gemini-1.5-flash-002"
-generation_config = GenerationConfig(temperature=1.6, top_p=0.97, top_k=60)
-model = GenerativeModel(MODEL_ADI, generation_config=generation_config)
-
-# --- DEPARTMAN TANIMLARI ---
 DEPARTMANLAR = {
     "Mağazacılık": {
         "icon": "🏬",
-        "temalar": ["Mağaza Operasyonu", "Müşteri Şikayeti Yönetimi", "Vardiya Planlama", "Kampanya Yönetimi",
-                    "Vitrin ve Görsel Merchandising", "Stok Sayımı", "Kasa Farkı Yönetimi", "Hırsızlık ve Kayıp Yönetimi"],
-        "karakterler": ["kasiyer", "reyon sorumlusu", "stajyer çalışan", "vardiya amiri", "depo sorumlusu",
-                         "mağaza müdür yardımcısı", "görsel merchandising uzmanı"],
-        "baglamlar": ["yoğun bir hafta sonu indirim kampanyası sırasında", "yıl sonu stok sayımı gecesinde",
-                      "AVM'deki büyük indirim haftasında", "okula dönüş sezonunun zirvesinde",
-                      "ani bir bölge müdürü ziyareti sırasında", "yeni sezon vitrin değişiminin son gününde"]
+        "karakterler": [
+            "kasiyer",
+            "reyon sorumlusu",
+            "vardiya amiri",
+            "depo sorumlusu",
+            "mağaza müdür yardımcısı",
+        ],
     },
     "Tedarik Zinciri": {
         "icon": "🚚",
-        "temalar": ["Depo Yönetimi", "Sevkiyat Gecikmeleri", "Lojistik Kriz Yönetimi", "Envanter Optimizasyonu",
-                    "Tedarikçi ile Anlaşmazlık", "Mevsimsel Talep Dalgalanması", "Depo İş Güvenliği"],
-        "karakterler": ["depo operasyon şefi", "sevkiyat planlama uzmanı", "lojistik koordinatörü",
-                         "forklift operatörü ekip lideri", "envanter analisti", "gümrük süreçleri sorumlusu"],
-        "baglamlar": ["kritik bir sevkiyatın gümrükte 3 gündür beklediği bir durumda", "depo kapasitesinin sınırına dayandığı bir dönemde",
-                      "yılın en yoğun sevkiyat haftasında", "yeni bir depo yönetim sistemine geçiş sürecinde",
-                      "bir tedarikçinin son anda teslimat tarihini değiştirdiği bir durumda"]
+        "karakterler": [
+            "depo operasyon şefi",
+            "sevkiyat planlama uzmanı",
+            "lojistik koordinatörü",
+            "envanter analisti",
+            "iş güvenliği sorumlusu",
+        ],
     },
     "Satın Alma": {
         "icon": "🛒",
-        "temalar": ["Tedarikçi Müzakeresi", "Maliyet Optimizasyonu", "Kalite Kontrol Anlaşmazlığı",
-                    "Yeni Tedarikçi Seçimi", "Bütçe Aşımı", "Numune Onay Süreci", "Sürdürülebilirlik Kriterleri"],
-        "karakterler": ["satın alma uzmanı", "satın alma asistanı", "kategori yöneticisi",
-                         "kalite kontrol sorumlusu", "yurt dışı tedarikçi temsilcisi"],
-        "baglamlar": ["sezon başlamasına 2 hafta kala", "ana tedarikçinin ani fiyat artışı bildirdiği bir günde",
-                      "numune onaylandıktan sonra üretimde kalite sorunu çıktığında", "yıllık tedarikçi değerlendirme toplantısı öncesinde",
-                      "döviz kurunun ani yükseldiği bir dönemde"]
+        "karakterler": [
+            "satın alma uzmanı",
+            "kategori yöneticisi",
+            "kalite kontrol sorumlusu",
+            "tedarikçi ilişkileri uzmanı",
+            "satın alma asistanı",
+        ],
     },
     "İnsan Kaynakları": {
         "icon": "👥",
-        "temalar": ["İşe Alım Kararları", "Terfi ve Adalet", "Performans Değerlendirme", "Çalışan Bağlılığı",
-                    "Etik İkilemler", "İşten Çıkarma Süreci", "Eğitim ve Gelişim", "Mobbing İddiası"],
-        "karakterler": ["İK uzmanı", "İK iş ortağı", "işe alım uzmanı", "eğitim ve gelişim sorumlusu",
-                         "bordro uzmanı", "organizasyonel gelişim danışmanı"],
-        "baglamlar": ["yıllık performans değerlendirme dönemi ortasında", "anonim bir şikayet mektubu geldiğinde",
-                      "iki eşit performanslı çalışan aynı terfiyi beklerken", "toplu işe alım süreci yürütülürken",
-                      "bir çalışanın istifasının ardındaki gerçek sebep ortaya çıktığında"]
+        "karakterler": [
+            "İK uzmanı",
+            "İK iş ortağı",
+            "işe alım uzmanı",
+            "eğitim sorumlusu",
+            "bordro uzmanı",
+        ],
     },
     "Pazarlama": {
         "icon": "📣",
-        "temalar": ["Kampanya Krizi", "Sosyal Medya Yönetimi", "Marka İtibarı", "Influencer İş Birliği",
-                    "Reklam Bütçesi Anlaşmazlığı", "Ürün Lansmanı", "Kriz İletişimi"],
-        "karakterler": ["dijital pazarlama uzmanı", "marka yöneticisi", "sosyal medya editörü",
-                         "pazarlama asistanı", "influencer ilişkileri sorumlusu"],
-        "baglamlar": ["büyük bir kampanya lansmanına 24 saat kala", "işbirliği yapılan bir influencer'ın tartışmalı paylaşımından sonra",
-                      "sosyal medyada markayla ilgili olumsuz bir trend başladığında", "reklam bütçesinin yarısı harcandıktan sonra beklenen sonuç gelmediğinde",
-                      "rakip firmanın beklenmedik bir kampanya yaptığı günde"]
+        "karakterler": [
+            "dijital pazarlama uzmanı",
+            "marka yöneticisi",
+            "sosyal medya editörü",
+            "pazarlama asistanı",
+            "kampanya yöneticisi",
+        ],
     },
     "Finans": {
         "icon": "💰",
-        "temalar": ["Bütçe Kısıtlaması", "Maliyet Raporlama Hatası", "Yatırım Kararı", "Nakit Akışı Krizi",
-                    "Denetim Süreci", "Departmanlar Arası Bütçe Çatışması"],
-        "karakterler": ["finansal analist", "muhasebe uzmanı", "bütçe planlama sorumlusu",
-                         "iç denetim uzmanı", "finans asistanı"],
-        "baglamlar": ["üst yönetime sunumdan bir gün önce ciddi bir rapor hatası fark edildiğinde",
-                      "yıl sonu bütçe kapanışına günler kala", "bir departmanın bütçesini aştığı ve ek onay istediği durumda",
-                      "beklenmedik bir denetimin duyurulduğu günde", "nakit akışında geçici bir sıkışma yaşandığında"]
+        "karakterler": [
+            "finansal analist",
+            "muhasebe uzmanı",
+            "bütçe planlama sorumlusu",
+            "iç denetim uzmanı",
+            "finans asistanı",
+        ],
     },
     "Bilgi Teknolojileri": {
         "icon": "💻",
-        "temalar": ["Sistem Arızası Krizi", "Yeni Yazılım Geçişi", "Siber Güvenlik Riski", "Proje Gecikmesi",
-                    "Ekip İçi Teknik Anlaşmazlık", "Otomasyon Projesi"],
-        "karakterler": ["yazılım geliştirici", "sistem yöneticisi", "proje yöneticisi",
-                         "IT stajyeri", "siber güvenlik uzmanı"],
-        "baglamlar": ["kritik bir güncelleme sırasında tüm mağaza kasalarının çöktüğü anda",
-                      "yeni bir otomasyon projesine ekipten sessiz bir direniş geldiğinde",
-                      "bir güvenlik açığının fark edildiği gece yarısı", "proje teslim tarihine 3 gün kala kritik bir hata bulunduğunda",
-                      "iki kıdemli geliştiricinin mimari tercih konusunda anlaşamadığı bir durumda"]
+        "karakterler": [
+            "yazılım geliştirici",
+            "sistem yöneticisi",
+            "proje yöneticisi",
+            "siber güvenlik uzmanı",
+            "destek uzmanı",
+        ],
     },
     "E-Ticaret": {
         "icon": "🌐",
-        "temalar": ["Web Sitesi Krizi", "İade ve Müşteri Memnuniyeti", "Kargo Gecikmesi", "Online Kampanya Yönetimi",
-                    "Stok-Web Senkronizasyon Hatası", "Müşteri Deneyimi İyileştirme"],
-        "karakterler": ["e-ticaret operasyon uzmanı", "müşteri deneyimi sorumlusu", "dijital kanal yöneticisi",
-                         "e-ticaret asistanı", "kargo süreçleri koordinatörü"],
-        "baglamlar": ["büyük indirim gününde (11.11 tarzı) site trafiği beklenenin 5 katına çıktığında",
-                      "stok-web senkronizasyon hatası yüzünden tükenen ürünler satılmaya devam ettiğinde",
-                      "kargo firmasının ardı ardına gecikme yaptığı bir haftada", "sosyal medyada bir müşteri şikayeti viral olduğunda",
-                      "yeni web sitesi tasarımına geçişin ilk gününde"]
-    }
+        "karakterler": [
+            "e-ticaret operasyon uzmanı",
+            "müşteri deneyimi sorumlusu",
+            "dijital kanal yöneticisi",
+            "kargo süreçleri koordinatörü",
+            "ürün içerik uzmanı",
+        ],
+    },
 }
 
-# --- KARAKTER SİSTEMİ İÇİN VERİ HAVUZLARI ---
-ISIM_HAVUZU = ["Ayşe Yıldız", "Mehmet Kara", "Elif Demir", "Can Öztürk", "Zeynep Aydın",
-               "Burak Şahin", "Selin Kaya", "Emre Yılmaz", "Deren Aksoy", "Merve Çelik",
-               "Kaan Polat", "Ece Arslan"]
+ISIM_HAVUZU = [
+    "Ayşe Yıldız",
+    "Mehmet Kara",
+    "Elif Demir",
+    "Can Öztürk",
+    "Zeynep Aydın",
+    "Burak Şahin",
+    "Selin Kaya",
+    "Emre Yılmaz",
+    "Deren Aksoy",
+    "Merve Çelik",
+    "Kaan Polat",
+    "Ece Arslan",
+]
 
 KISILIK_OZELLIKLERI = [
-    "disiplinli ama esnek olmayan", "yaratıcı fakat dağınık", "çok çalışkan ama özgüvensiz",
-    "karizmatik ama bazen otoriteye karşı gelen", "sadık ama değişime kapalı",
-    "hırslı ve hızlı öğrenen", "duygusal zekası yüksek, çatışmadan kaçınan",
-    "detaycı ve mükemmeliyetçi", "esprili ama zaman yönetimi zayıf", "sessiz ama gözlemci ve stratejik"
+    "disiplinli ama esnek olmayan",
+    "yaratıcı fakat dağınık",
+    "çok çalışkan ama özgüvensiz",
+    "hızlı karar veren ama sabırsız",
+    "sadık ama değişime kapalı",
+    "hırslı ve hızlı öğrenen",
+    "duygusal zekâsı yüksek",
+    "detaycı ve mükemmeliyetçi",
+    "esprili ama zaman yönetimi zayıf",
+    "sessiz ama gözlemci",
 ]
 
-# --- SİSTEM HAFIZASI ---
-defaults = {
-    'started': False, 'user_name': "", 'user_department': "",
-    'stats': {'Moral': 60, 'Verimlilik': 60, 'Güven': 60},
-    'tur': 1, 'current_scenario': None, 'last_error': None, 'ai_success_count': 0,
-    'gecmis_konular': [], 'secim_gecmisi': [], 'karar_gecmisi': [], 'havuz_kullanilan': [],
-    'karakter_havuzu': []
-}
-for k, v in defaults.items():
-    if k not in st.session_state:
-        st.session_state[k] = v
-
-tip_renk = {"Demokratik": "#2563eb", "Otoriter": "#dc2626", "Koçvari": "#16a34a", "Kaçınmacı": "#6b7280", "Belirsiz": "#9ca3af"}
-TUM_TIPLER = ["Demokratik", "Otoriter", "Koçvari", "Kaçınmacı"]
-
-# --- GENİŞLETİLMİŞ YEDEK SENARYO HAVUZU (her departman için 3-4 çeşitli senaryo) ---
-havuz = [
-    # ================= MAĞAZACILIK =================
-    {"departman": "Mağazacılık", "olay": "Kampanya haftasında bir üründe etiket hatası çıktı; kasada indirim yansımıyor ve müşteri kuyruğu büyüyor.",
-     "secenekler": [
-        {"metin": "Kasiyerlere manuel indirim yetkisi verip kuyruğu hemen eritin.", "etki": {"Moral": 5, "Verimlilik": 10, "Güven": 5}, "tip": "Otoriter"},
-        {"metin": "Sistemi düzeltene kadar özür dileyip müşterilere kupon verin.", "etki": {"Moral": 5, "Verimlilik": -5, "Güven": 10}, "tip": "Demokratik"},
-        {"metin": "Ekiple birlikte hatayı analiz edip anlık çözüm üretin.", "etki": {"Moral": 5, "Verimlilik": 5, "Güven": 5}, "tip": "Koçvari"},
-        {"metin": "IT'nin düzeltmesini bekleyin, müşterilere sabır isteyin.", "etki": {"Moral": -10, "Verimlilik": -10, "Güven": -10}, "tip": "Kaçınmacı"}
-     ]},
-    {"departman": "Mağazacılık", "olay": "Yeni sezon vitrin değişimi yetişmiyor; ekip yorgun ve bölge müdürünün habersiz ziyareti yaklaşıyor.",
-     "secenekler": [
-        {"metin": "Ekstra personel çağırıp geceye kalarak yetiştirin.", "etki": {"Moral": -10, "Verimlilik": 15, "Güven": 0}, "tip": "Otoriter"},
-        {"metin": "Öncelik sırası belirleyip en görünür alanları önce tamamlayın.", "etki": {"Moral": 5, "Verimlilik": 5, "Güven": 10}, "tip": "Demokratik"},
-        {"metin": "Ekibe durumu açıklayıp gönüllü fazla mesai isteyin.", "etki": {"Moral": 10, "Verimlilik": 5, "Güven": 5}, "tip": "Koçvari"},
-        {"metin": "Mevcut vitrinle idare edip müdüre 'zaman yetmedi' deyin.", "etki": {"Moral": 0, "Verimlilik": -5, "Güven": -15}, "tip": "Kaçınmacı"}
-     ]},
-    {"departman": "Mağazacılık", "olay": "Deneyimli bir kasiyeriniz, yoğun saatte bir müşteriyle tartışmaya girdi; müşteri şikayet için bölge müdürünü arayacağını söylüyor.",
-     "secenekler": [
-        {"metin": "Müşteriyi hemen sakinleştirip özel bir indirim/çözüm sunun.", "etki": {"Moral": -5, "Verimlilik": 5, "Güven": 10}, "tip": "Demokratik"},
-        {"metin": "Durumu görmezden gelip normal operasyona devam edin.", "etki": {"Moral": 0, "Verimlilik": -5, "Güven": -15}, "tip": "Kaçınmacı"}
-     ]},
-    {"departman": "Mağazacılık", "olay": "Kasa sayımında sürekli küçük farklar çıkıyor; ekip içinde kimin sorumlu olduğu belirsiz, güvensizlik başlıyor.",
-     "secenekler": [
-        {"metin": "Tüm ekibe kamera kayıtlarının izleneceğini duyurup net kurallar koyun.", "etki": {"Moral": -10, "Verimlilik": 5, "Güven": -5}, "tip": "Otoriter"},
-        {"metin": "Kasa sürecini ekiple birlikte gözden geçirip yeni bir kontrol sistemi tasarlayın.", "etki": {"Moral": 5, "Verimlilik": 10, "Güven": 10}, "tip": "Koçvari"},
-        {"metin": "Herkesle teker teker konuşup güven ortamı oluşturun.", "etki": {"Moral": 5, "Verimlilik": -5, "Güven": 10}, "tip": "Demokratik"}
-     ]},
-
-    # ================= TEDARİK ZİNCİRİ =================
-    {"departman": "Tedarik Zinciri", "olay": "Kritik bir sevkiyat gümrükte 3 gündür bekliyor; 12 mağaza bu üründe stoksuz kalma riski taşıyor.",
-     "secenekler": [
-        {"metin": "Gümrük müşavirine ekstra ücret ödeyerek süreci hızlandırın.", "etki": {"Moral": 0, "Verimlilik": 15, "Güven": -5}, "tip": "Otoriter"},
-        {"metin": "Mağazalara durumu şeffafça bildirip alternatif ürün önerileri sunun.", "etki": {"Moral": 5, "Verimlilik": 5, "Güven": 10}, "tip": "Demokratik"},
-        {"metin": "Ekiple birlikte uzun vadeli bir acil durum planı oluşturun.", "etki": {"Moral": 5, "Verimlilik": 5, "Güven": 10}, "tip": "Koçvari"},
-        {"metin": "Sürecin kendiliğinden çözülmesini bekleyip bildirim yapmayın.", "etki": {"Moral": -5, "Verimlilik": -15, "Güven": -15}, "tip": "Kaçınmacı"}
-     ]},
-    {"departman": "Tedarik Zinciri", "olay": "Depo kapasitesi sınırına dayandı; ya yeni bir geçici depo kiralanmalı ya da bazı ürünler mağazalara erken sevk edilmeli.",
-     "secenekler": [
-        {"metin": "Ek bütçe onayı alıp hemen geçici depo kiralayın.", "etki": {"Moral": 0, "Verimlilik": 10, "Güven": 5}, "tip": "Otoriter"},
-        {"metin": "Mağazalarla koordineli erken sevkiyat planı yapın, riski paylaşın.", "etki": {"Moral": 5, "Verimlilik": 5, "Güven": 10}, "tip": "Demokratik"}
-     ]},
-    {"departman": "Tedarik Zinciri", "olay": "Yeni bir depo yönetim sistemine geçiş sürecinde eski çalışanlar sistemi kullanmakta zorlanıyor, hatalar artıyor.",
-     "secenekler": [
-        {"metin": "Sistemi kullanmayanlara performans uyarısı verin.", "etki": {"Moral": -10, "Verimlilik": 10, "Güven": -10}, "tip": "Otoriter"},
-        {"metin": "Kıdemli çalışanlarla birebir eğitim seansları planlayıp sabırla destek olun.", "etki": {"Moral": 10, "Verimlilik": 5, "Güven": 10}, "tip": "Koçvari"},
-        {"metin": "Ekipten geri bildirim toplayıp sistemin zor kısımlarını iyileştirin.", "etki": {"Moral": 5, "Verimlilik": 5, "Güven": 10}, "tip": "Demokratik"}
-     ]},
-
-    # ================= SATIN ALMA =================
-    {"departman": "Satın Alma", "olay": "Ana tedarikçi, sezon başlamasına 2 hafta kala fiyatlarda %18 artış bildirdi ve ürünler zaten sipariş edilmiş durumda.",
-     "secenekler": [
-        {"metin": "Sert bir müzakereyle eski fiyatta ısrar edin.", "etki": {"Moral": 0, "Verimlilik": 5, "Güven": -5}, "tip": "Otoriter"},
-        {"metin": "Tedarikçiyle uzun vadeli bir anlaşma önererek orta yol bulun.", "etki": {"Moral": 5, "Verimlilik": 5, "Güven": 10}, "tip": "Demokratik"},
-        {"metin": "Ekiple birlikte alternatif tedarikçi araştırması başlatın.", "etki": {"Moral": 5, "Verimlilik": 0, "Güven": 10}, "tip": "Koçvari"},
-        {"metin": "Artışı kabul edip konuyu üst yönetime yansıtmadan kapatın.", "etki": {"Moral": -5, "Verimlilik": -5, "Güven": -15}, "tip": "Kaçınmacı"}
-     ]},
-    {"departman": "Satın Alma", "olay": "Onaylanan numunenin aksine, seri üretimde kumaş kalitesinde belirgin düşüş fark edildi; teslim tarihine 10 gün var. Ya üretimi durdurup risk alacaksınız ya da mevcut kaliteyle devam edeceksiniz.",
-     "secenekler": [
-        {"metin": "Üretimi tamamen durdurup tedarikçiden yeniden numune isteyin.", "etki": {"Moral": 0, "Verimlilik": -10, "Güven": 10}, "tip": "Otoriter"},
-        {"metin": "Teslim tarihini kaçırmamak için mevcut kaliteyle devam edin.", "etki": {"Moral": -5, "Verimlilik": 10, "Güven": -15}, "tip": "Kaçınmacı"}
-     ]},
-    {"departman": "Satın Alma", "olay": "Yeni bir tedarikçi çok uygun fiyat sunuyor ama sürdürülebilirlik sertifikaları eksik; sezon başına yetişmesi gereken kritik bir ürün var.",
-     "secenekler": [
-        {"metin": "Fiyat avantajı için riski göze alıp anlaşmayı hemen imzalayın.", "etki": {"Moral": 0, "Verimlilik": 15, "Güven": -10}, "tip": "Otoriter"},
-        {"metin": "Tedarikçiye kısa süreli şartlı bir anlaşma sunup sertifikasyon sürecini takip edin.", "etki": {"Moral": 5, "Verimlilik": 5, "Güven": 10}, "tip": "Koçvari"},
-        {"metin": "Ekiple birlikte artı ve eksileri tartışıp ortak bir karara varın.", "etki": {"Moral": 5, "Verimlilik": 0, "Güven": 10}, "tip": "Demokratik"}
-     ]},
-    {"departman": "Satın Alma", "olay": "Kategori yöneticiniz, yurt dışı bir tedarikçiyle görüşmede sizin onayınız olmadan sözlü bir fiyat taahhüdünde bulunmuş; tedarikçi bunu yazılı hale getirmek istiyor.",
-     "secenekler": [
-        {"metin": "Taahhüdü iptal edip yöneticinizi resmi olarak uyarın.", "etki": {"Moral": -10, "Verimlilik": 5, "Güven": -5}, "tip": "Otoriter"},
-        {"metin": "Yöneticinizle özel konuşup süreci birlikte toparlayın, güven inşa edin.", "etki": {"Moral": 10, "Verimlilik": 0, "Güven": 10}, "tip": "Koçvari"},
-        {"metin": "Tedarikçiyle yeniden görüşüp taahhüdü şirket lehine hafifçe revize edin.", "etki": {"Moral": 5, "Verimlilik": 5, "Güven": 5}, "tip": "Demokratik"},
-        {"metin": "Taahhüdü olduğu gibi kabul edip riski üstlenin.", "etki": {"Moral": 0, "Verimlilik": -5, "Güven": -10}, "tip": "Kaçınmacı"}
-     ]},
-
-    # ================= İNSAN KAYNAKLARI =================
-    {"departman": "İnsan Kaynakları", "olay": "İki eşit performanslı çalışan aynı terfi pozisyonu için bekliyor; ikisi de haklı gerekçelere sahip.",
-     "secenekler": [
-        {"metin": "Objektif verilere dayanarak hızlıca kendiniz karar verip açıklayın.", "etki": {"Moral": -5, "Verimlilik": 10, "Güven": 0}, "tip": "Otoriter"},
-        {"metin": "Her ikisiyle de ayrı görüşüp alternatif fırsatlar sunun.", "etki": {"Moral": 10, "Verimlilik": 0, "Güven": 10}, "tip": "Koçvari"},
-        {"metin": "Şeffaf bir değerlendirme komitesi kurup kararı birlikte verin.", "etki": {"Moral": 5, "Verimlilik": -5, "Güven": 15}, "tip": "Demokratik"},
-        {"metin": "Kararı belirsiz bir tarihe erteleyin.", "etki": {"Moral": -10, "Verimlilik": -5, "Güven": -15}, "tip": "Kaçınmacı"}
-     ]},
-    {"departman": "İnsan Kaynakları", "olay": "Anonim bir şikayet mektubu geldi; bir departman yöneticisinin çalışanlarına karşı mobbing yaptığı iddia ediliyor. Ya hemen soruşturma başlatacaksınız ya da daha fazla kanıt bekleyeceksiniz.",
-     "secenekler": [
-        {"metin": "Gizlilik içinde tarafsız bir soruşturma ekibi kurup hemen harekete geçin.", "etki": {"Moral": 5, "Verimlilik": 0, "Güven": 15}, "tip": "Demokratik"},
-        {"metin": "Kanıt yetersiz diyerek konuyu şimdilik kapatın.", "etki": {"Moral": -15, "Verimlilik": -5, "Güven": -20}, "tip": "Kaçınmacı"}
-     ]},
-    {"departman": "İnsan Kaynakları", "olay": "Toplu işe alım sürecinde, işe alınan adayların üçte biri ilk ayda işi bırakıyor; sebep net değil.",
-     "secenekler": [
-        {"metin": "İşe alım kriterlerini sertleştirip mülakat sürecini zorlaştırın.", "etki": {"Moral": 0, "Verimlilik": 5, "Güven": -5}, "tip": "Otoriter"},
-        {"metin": "Ayrılan çalışanlarla çıkış görüşmesi yapıp kök nedeni analiz edin.", "etki": {"Moral": 5, "Verimlilik": 10, "Güven": 10}, "tip": "Koçvari"},
-        {"metin": "Yeni başlayanlar için bir mentorluk programı tasarlayın.", "etki": {"Moral": 10, "Verimlilik": 5, "Güven": 10}, "tip": "Demokratik"}
-     ]},
-
-    # ================= PAZARLAMA =================
-    {"departman": "Pazarlama", "olay": "İş birliği yapılan bir influencer, kampanya lansmanından bir gün önce tartışmalı bir paylaşım yaptı; marka adı da etiketli.",
-     "secenekler": [
-        {"metin": "İş birliğini derhal sonlandırıp kamuoyuna açıklama yapın.", "etki": {"Moral": 0, "Verimlilik": 5, "Güven": 10}, "tip": "Otoriter"},
-        {"metin": "Influencer ile özel görüşüp netleştirmesini isteyin.", "etki": {"Moral": 5, "Verimlilik": 0, "Güven": 5}, "tip": "Demokratik"},
-        {"metin": "Kriz iletişim ekibiyle durumu yönetip öğrenme fırsatına çevirin.", "etki": {"Moral": 5, "Verimlilik": 5, "Güven": 10}, "tip": "Koçvari"},
-        {"metin": "Tepki vermeyip konunun unutulmasını bekleyin.", "etki": {"Moral": -5, "Verimlilik": -10, "Güven": -15}, "tip": "Kaçınmacı"}
-     ]},
-    {"departman": "Pazarlama", "olay": "Büyük bir kampanyanın ana görseli, lansmana 24 saat kala tasarım ekibinden hâlâ teslim edilmedi.",
-     "secenekler": [
-        {"metin": "Tasarım ekibine sert bir uyarı yapıp gece boyunca çalışmalarını isteyin.", "etki": {"Moral": -15, "Verimlilik": 15, "Güven": -5}, "tip": "Otoriter"},
-        {"metin": "Ekiple oturup önceliklendirme yapın, basitleştirilmiş bir versiyonla ilerleyin.", "etki": {"Moral": 5, "Verimlilik": 10, "Güven": 10}, "tip": "Koçvari"},
-        {"metin": "Sorunun kaynağını sakin şekilde sorup ekibe destek sunun.", "etki": {"Moral": 10, "Verimlilik": 5, "Güven": 5}, "tip": "Demokratik"}
-     ]},
-    {"departman": "Pazarlama", "olay": "Rakip firma, sizin planladığınız kampanyaya çok benzer bir kampanyayı bir hafta önce yayınladı. Devam mı edeceksiniz, iptal mi?",
-     "secenekler": [
-        {"metin": "Kampanyayı planlandığı gibi yayınlayıp farkı yaratıcılıkla kapatmaya çalışın.", "etki": {"Moral": 5, "Verimlilik": 5, "Güven": 5}, "tip": "Koçvari"},
-        {"metin": "Kampanyayı tamamen iptal edip sıfırdan farklı bir konsept geliştirin.", "etki": {"Moral": -5, "Verimlilik": -10, "Güven": 0}, "tip": "Kaçınmacı"}
-     ]},
-
-    # ================= FİNANS =================
-    {"departman": "Finans", "olay": "Üst yönetime sunumdan bir gün önce, aylık raporda ciddi bir hesaplama hatası fark edildi.",
-     "secenekler": [
-        {"metin": "Geceyi kullanarak raporu yeniden hazırlayıp kimseyi bilgilendirmeyin.", "etki": {"Moral": -5, "Verimlilik": 10, "Güven": -5}, "tip": "Otoriter"},
-        {"metin": "Hatayı şeffafça ele alıp üst yönetime erkenden bildirin.", "etki": {"Moral": 5, "Verimlilik": 5, "Güven": 15}, "tip": "Demokratik"},
-        {"metin": "Kök nedeni bulup kalıcı bir kontrol mekanizması kurun.", "etki": {"Moral": 5, "Verimlilik": 5, "Güven": 10}, "tip": "Koçvari"},
-        {"metin": "Küçük bir hata diye düşünüp sunumu değiştirmeden sunun.", "etki": {"Moral": -5, "Verimlilik": -5, "Güven": -20}, "tip": "Kaçınmacı"}
-     ]},
-    {"departman": "Finans", "olay": "Pazarlama departmanı, planlanan bütçenin %40 fazlasını harcamış ve ek onay istiyor; genel bütçe zaten kısıtlı.",
-     "secenekler": [
-        {"metin": "Talebi doğrudan reddedip bütçe disiplinini vurgulayın.", "etki": {"Moral": -5, "Verimlilik": 5, "Güven": -10}, "tip": "Otoriter"},
-        {"metin": "Pazarlama ekibiyle oturup harcamanın getirisini analiz edip ortak çözüm bulun.", "etki": {"Moral": 5, "Verimlilik": 5, "Güven": 15}, "tip": "Demokratik"},
-        {"metin": "Diğer departmanlardan tasarruf bularak esnek bir çözüm sunun.", "etki": {"Moral": 5, "Verimlilik": 0, "Güven": 10}, "tip": "Koçvari"}
-     ]},
-    {"departman": "Finans", "olay": "Beklenmedik bir iç denetim duyuruldu; bazı harcama kalemlerinde belge eksikliği olduğunu biliyorsunuz. Şimdi mi düzeltirsiniz, denetimi mi beklersiniz?",
-     "secenekler": [
-        {"metin": "Denetimden önce eksik belgeleri toparlayıp şeffafça sunun.", "etki": {"Moral": 5, "Verimlilik": 0, "Güven": 15}, "tip": "Demokratik"},
-        {"metin": "Denetimi bekleyip sorulmadan bir şey açıklamayın.", "etki": {"Moral": -5, "Verimlilik": 0, "Güven": -15}, "tip": "Kaçınmacı"}
-     ]},
-
-    # ================= BİLGİ TEKNOLOJİLERİ =================
-    {"departman": "Bilgi Teknolojileri", "olay": "Kritik bir sistem güncellemesi sırasında tüm mağaza kasaları çöktü.",
-     "secenekler": [
-        {"metin": "Güncellemeyi anında geri alıp eski sisteme dönün.", "etki": {"Moral": 5, "Verimlilik": 10, "Güven": 5}, "tip": "Otoriter"},
-        {"metin": "Ekiple hatayı canlı analiz edip mağazalara bilgi akışı sağlayın.", "etki": {"Moral": 5, "Verimlilik": 5, "Güven": 10}, "tip": "Koçvari"},
-        {"metin": "Mağaza müdürleriyle iletişime geçip alternatif ödeme yöntemleri sunun.", "etki": {"Moral": 5, "Verimlilik": 5, "Güven": 10}, "tip": "Demokratik"},
-        {"metin": "Sorunun kendiliğinden çözülmesini bekleyin.", "etki": {"Moral": -10, "Verimlilik": -15, "Güven": -15}, "tip": "Kaçınmacı"}
-     ]},
-    {"departman": "Bilgi Teknolojileri", "olay": "Yeni bir otomasyon projesine, işini kaybetmekten korkan kıdemli bir çalışandan sessiz bir direniş geliyor.",
-     "secenekler": [
-        {"metin": "Projenin zorunlu olduğunu belirtip katılımı şart koşun.", "etki": {"Moral": -10, "Verimlilik": 10, "Güven": -5}, "tip": "Otoriter"},
-        {"metin": "Çalışanla birebir görüşüp otomasyonun rolünü nasıl geliştireceğini planlayın.", "etki": {"Moral": 10, "Verimlilik": 5, "Güven": 10}, "tip": "Koçvari"},
-        {"metin": "Ekibi sürece dahil edip fikirlerini alarak projeyi birlikte şekillendirin.", "etki": {"Moral": 5, "Verimlilik": 5, "Güven": 10}, "tip": "Demokratik"}
-     ]},
-    {"departman": "Bilgi Teknolojileri", "olay": "Gece yarısı bir güvenlik açığı tespit edildi; sistemi hemen kapatıp herkesi uyandıracak mısınız yoksa sabahı mı bekleyeceksiniz?",
-     "secenekler": [
-        {"metin": "Sistemi hemen kapatıp ekibi acil toplantıya çağırın.", "etki": {"Moral": -10, "Verimlilik": 5, "Güven": 15}, "tip": "Otoriter"},
-        {"metin": "Riski düşük görüp sabaha kadar bekleyin.", "etki": {"Moral": 5, "Verimlilik": -5, "Güven": -15}, "tip": "Kaçınmacı"}
-     ]},
-
-    # ================= E-TİCARET =================
-    {"departman": "E-Ticaret", "olay": "Büyük indirim gününde web sitesi trafiği beklenenin 5 katına çıktı; siparişler aksıyor.",
-     "secenekler": [
-        {"metin": "Sunucu kapasitesini acil artırıp ek maliyeti göze alın.", "etki": {"Moral": 0, "Verimlilik": 15, "Güven": 5}, "tip": "Otoriter"},
-        {"metin": "Kritik olmayan özellikleri geçici kapatarak performansı önceliklendirin.", "etki": {"Moral": 5, "Verimlilik": 10, "Güven": 5}, "tip": "Koçvari"},
-        {"metin": "Müşterilere şeffaf bildirimle durumu açıklayıp ekstra indirim kodu verin.", "etki": {"Moral": 5, "Verimlilik": 0, "Güven": 15}, "tip": "Demokratik"},
-        {"metin": "Sorunun kendi kendine düzelmesini bekleyin.", "etki": {"Moral": -10, "Verimlilik": -15, "Güven": -15}, "tip": "Kaçınmacı"}
-     ]},
-    {"departman": "E-Ticaret", "olay": "Stok-web senkronizasyon hatası yüzünden tükenmiş bir ürün satılmaya devam ediyor; iade talepleri hızla artıyor.",
-     "secenekler": [
-        {"metin": "Ürünü siteden anında kaldırıp mevcut siparişleri iptal edin.", "etki": {"Moral": 0, "Verimlilik": 10, "Güven": 0}, "tip": "Otoriter"},
-        {"metin": "Müşterilere alternatif ürün veya bekleme seçeneği sunarak iletişimde kalın.", "etki": {"Moral": 5, "Verimlilik": 0, "Güven": 15}, "tip": "Demokratik"},
-        {"metin": "IT ekibiyle birlikte senkronizasyon sürecini kökten iyileştirin.", "etki": {"Moral": 5, "Verimlilik": 10, "Güven": 5}, "tip": "Koçvari"}
-     ]},
-    {"departman": "E-Ticaret", "olay": "Kargo firması art arda üçüncü kez gecikme yaptı; sözleşmeyi feshedip yeni bir firma mı arayacaksınız, yoksa bir şans daha mı vereceksiniz?",
-     "secenekler": [
-        {"metin": "Sözleşmeyi feshedip acilen alternatif kargo firması arayın.", "etki": {"Moral": 0, "Verimlilik": 10, "Güven": 5}, "tip": "Otoriter"},
-        {"metin": "Firmaya net bir uyarı yapıp son bir şans daha verin.", "etki": {"Moral": 5, "Verimlilik": 0, "Güven": 5}, "tip": "Demokratik"}
-     ]},
-
-    # ================= GENEL (her departmanda yedek) =================
-    {"departman": "Genel", "olay": "Ekibinizdeki iki kıdemli çalışan, yeni bir iş süreci üzerinde fikir ayrılığı yaşıyor.",
-     "secenekler": [
-        {"metin": "İkisini aynı anda odaya çağırıp çözüm bulana kadar çıkmayın.", "etki": {"Moral": -5, "Verimlilik": 5, "Güven": 10}, "tip": "Otoriter"},
-        {"metin": "Fikirlerini ayrı dinleyip size en uygun olanı siz seçin.", "etki": {"Moral": 5, "Verimlilik": 10, "Güven": -5}, "tip": "Otoriter"},
-        {"metin": "Tarafsız bir moderatör eşliğinde fikirlerini ekibe sunmalarını isteyin.", "etki": {"Moral": 5, "Verimlilik": -5, "Güven": 10}, "tip": "Demokratik"},
-        {"metin": "Zamanla düzeleceğini düşünüp müdahale etmeyin.", "etki": {"Moral": -10, "Verimlilik": -5, "Güven": -10}, "tip": "Kaçınmacı"}
-     ]},
-    {"departman": "Genel", "olay": "Yüksek potansiyelli bir çalışanınızın başka bir firmadan iş teklifi aldığını öğrendiniz.",
-     "secenekler": [
-        {"metin": "Kariyer planını öne çekin ve yetki alanını genişletin.", "etki": {"Moral": 10, "Verimlilik": 5, "Güven": 10}, "tip": "Koçvari"},
-        {"metin": "Onunla açık bir sohbet edip gerçek beklentilerini anlamaya çalışın.", "etki": {"Moral": 10, "Verimlilik": -5, "Güven": 10}, "tip": "Demokratik"},
-        {"metin": "Gitmek istiyorsa engel olmayın, yenisini bulursunuz deyin.", "etki": {"Moral": -10, "Verimlilik": -10, "Güven": -15}, "tip": "Kaçınmacı"}
-     ]},
-]
-
-def aciklama_yon(v):
-    if v > 0: return "arttı"
-    elif v < 0: return "azaldı"
-    return "değişmedi"
-
-narratif_ipuclari = {
-    ("Moral", "arttı"): "ekibin motivasyonu ve enerjisi gözle görülür şekilde yükseldi",
-    ("Moral", "azaldı"): "ekipte hafif bir huzursuzluk ve gerginlik sezildi",
-    ("Verimlilik", "arttı"): "operasyonel sonuçlar ve iş akışı belirgin şekilde iyileşti",
-    ("Verimlilik", "azaldı"): "günlük işlerde küçük aksamalar ve yavaşlamalar ortaya çıktı",
-    ("Güven", "arttı"): "çalışanlar sizinle daha açık ve rahat iletişim kurmaya başladı",
-    ("Güven", "azaldı"): "bazı çalışanlarda size karşı hafif bir güven sarsıntısı oluştu",
+TIP_RENK = {
+    "Demokratik": "#2563eb",
+    "Otoriter": "#dc2626",
+    "Koçvari": "#16a34a",
+    "Kaçınmacı": "#6b7280",
 }
 
-def onceki_karar_ozeti_uret(karar):
-    if not karar:
-        return None
-    ipuclari = []
-    for k, v in karar['etki'].items():
-        if abs(v) >= 5:
-            yon = aciklama_yon(v)
-            ipucu = narratif_ipuclari.get((k, yon))
-            if ipucu:
-                ipuclari.append(ipucu)
-    if not ipuclari:
-        return "Bir önceki turda '" + karar['metin'] + "' yaklaşımını seçtiniz ve durum genel olarak stabil kaldı."
-    return "Bir önceki turda '" + karar['metin'] + "' yaklaşımını seçtiniz. Bunun sonucunda " + ", ".join(ipuclari) + "."
 
+# ==========================================================
+# HAZIR VAKA HAVUZU
+#
+# Her departman için 12 vaka vardır.
+# Her vaka tam 4 şıklıdır.
+#
+# Şık yazım biçimi:
+# (metin, liderlik_tipi, moral, verimlilik, güven)
+# ==========================================================
+
+HAM_VAKALAR = {
+    "Mağazacılık": [
+        (
+            "Kampanya haftasında bir üründe etiket hatası çıktı; kasada indirim yansımıyor ve müşteri kuyruğu büyüyor.",
+            [
+                ("Yetki sınırları içinde geçici kasa düzeltmesi uygulayıp kuyruğu yönetin.", "Otoriter", -5, 10, 5),
+                ("Kasiyerleri ve reyon ekibini dinleyip müşterilere ortak bir çözüm açıklayın.", "Demokratik", 5, -5, 10),
+                ("Bir çalışana hatayı izleme görevi verip ekipçe geçici süreç oluşturun.", "Koçvari", 5, 5, 5),
+                ("Merkezden yanıt gelene kadar kasadaki tartışmalara müdahale etmeyin.", "Kaçınmacı", -10, -10, -15),
+            ],
+        ),
+        (
+            "Yeni sezon vitrin değişimi yetişmiyor; ekip yorgun ve bölge müdürünün ziyareti yaklaşıyor.",
+            [
+                ("Öncelikli alanları siz belirleyip görevleri yeniden dağıtın.", "Otoriter", -5, 10, 0),
+                ("Ekiple kapsamı daraltıp hangi vitrinlerin önce biteceğine karar verin.", "Demokratik", 5, 0, 10),
+                ("Yeni çalışanları deneyimli kişilerle eşleştirerek işi bölün.", "Koçvari", 10, 5, 5),
+                ("Mevcut vitrinle devam edip gecikmeyi ziyarette açıklayın.", "Kaçınmacı", 0, -10, -10),
+            ],
+        ),
+        (
+            "Yoğun saatte bir kasiyer ile müşteri arasında tartışma çıktı; müşteri şikâyet oluşturacağını söylüyor.",
+            [
+                ("Kasiyeri kasadan alıp müşterinin sorununu hemen siz çözün.", "Otoriter", -5, 10, 0),
+                ("İki tarafı ayrı ayrı dinleyip uygulanabilir çözümü açıklayın.", "Demokratik", 5, -5, 10),
+                ("Olayı çözdükten sonra kasiyere sakin iletişim için geri bildirim verin.", "Koçvari", 5, 0, 10),
+                ("Tartışmanın kendiliğinden bitmesini bekleyin.", "Kaçınmacı", -10, -5, -15),
+            ],
+        ),
+        (
+            "Kasa sayımlarında üç akşam üst üste küçük farklar oluştu; ekip birbirinden şüphelenmeye başladı.",
+            [
+                ("Kasa devir prosedürünü hemen değiştirip çift imza zorunluluğu koyun.", "Otoriter", -5, 10, 5),
+                ("Ekiple süreçteki hata noktalarını konuşup ortak kontrol listesi hazırlayın.", "Demokratik", 5, 0, 10),
+                ("Kasiyerlere tek tek destek verip devir uygulamasını birlikte çalışın.", "Koçvari", 10, 0, 5),
+                ("Tutarlar küçük olduğu için farkları bir süre daha izlemekle yetinin.", "Kaçınmacı", -5, -10, -15),
+            ],
+        ),
+        (
+            "Hafta sonu vardiyasında iki çalışan hastalandı; deneme kabinlerinde uzun kuyruk oluştu.",
+            [
+                ("Reyon görevlerini geçici olarak değiştirip kabinlere personel kaydırın.", "Otoriter", -5, 10, 0),
+                ("Ekibe seçenekleri sorup yoğun saatler için ortak vardiya planı kurun.", "Demokratik", 5, 0, 10),
+                ("Az yoğun reyondaki çalışanlara kabin sürecini hızlıca öğretin.", "Koçvari", 5, 5, 5),
+                ("Eksik kadroyla devam edip müşterilerden anlayış bekleyin.", "Kaçınmacı", -5, -10, -10),
+            ],
+        ),
+        (
+            "Yeni gelen okul ürünlerinin bedenleri depoda karışmış; açılıştan önce reyonun hazırlanması gerekiyor.",
+            [
+                ("Ürünleri hızlı sayım için gruplara ayırıp görevleri doğrudan dağıtın.", "Otoriter", -5, 10, 0),
+                ("Depo ve reyon ekipleriyle öncelikli bedenleri birlikte belirleyin.", "Demokratik", 5, 0, 10),
+                ("Deneyimli bir çalışanı yeni personele eşleştirip sayımı birlikte yaptırın.", "Koçvari", 10, 5, 5),
+                ("Karışık kolileri kapalı tutup reyonu eksik ürünle açın.", "Kaçınmacı", 0, -10, -10),
+            ],
+        ),
+        (
+            "Bir müşteri etiketi kopmuş ürünü iade etmek istiyor; çalışanlar iade kuralını farklı yorumluyor.",
+            [
+                ("Mevcut iade kuralını kontrol edip o vaka için net karar verin.", "Otoriter", 0, 10, 5),
+                ("Müşteriyi dinleyip çalışanlarla birlikte kuralın uygun uygulamasını değerlendirin.", "Demokratik", 5, -5, 10),
+                ("İade sonrasında ekibe benzer durumlar için kısa bir uygulama eğitimi verin.", "Koçvari", 5, 5, 5),
+                ("Kararı başka vardiyaya bırakıp müşteriden sonra gelmesini isteyin.", "Kaçınmacı", -5, -10, -10),
+            ],
+        ),
+        (
+            "Stok sayımında çocuk montlarında sistem ile raf arasında 18 adet fark çıktı; kampanya yarın başlıyor.",
+            [
+                ("İlgili satış ve depo hareketlerini bugün yeniden saydırın.", "Otoriter", -5, 10, 5),
+                ("Depo ve satış ekipleriyle farkın olası kaynaklarını ortak inceleyin.", "Demokratik", 5, 0, 10),
+                ("Sayım ekibine hata kontrol adımlarını gösterip yeniden sayımı yönetin.", "Koçvari", 5, 5, 5),
+                ("Kampanya bitene kadar farkı kayıtlara işlemeyin.", "Kaçınmacı", -5, -10, -15),
+            ],
+        ),
+        (
+            "Görsel düzenleme ekibi kampanya masasını kapı önüne taşıdı; güvenlik görevlisi geçişin daraldığını bildirdi.",
+            [
+                ("Masayı güvenli alana hemen taşıtıp açılış düzenini değiştirin.", "Otoriter", -5, 10, 5),
+                ("Güvenlik ve satış ekipleriyle güvenli bir yerleşim belirleyin.", "Demokratik", 5, 0, 10),
+                ("Görsel ekiple yerleşim ölçülerini gözden geçirip yeni düzeni birlikte kurun.", "Koçvari", 5, 5, 5),
+                ("Yoğunluk azalır diye mevcut yerleşimi koruyun.", "Kaçınmacı", -10, -10, -15),
+            ],
+        ),
+        (
+            "Aynı müşteri farklı günlerde iki çalışan hakkında benzer hizmet şikâyeti bıraktı.",
+            [
+                ("Hizmet adımlarını yeniden duyurup ilgili vardiyada yakın takip başlatın.", "Otoriter", -5, 10, 0),
+                ("Müşteri geri bildirimini ekiple paylaşmadan önce çalışanları ayrı ayrı dinleyin.", "Demokratik", 5, 0, 10),
+                ("Çalışanlarla kısa canlandırmalar yapıp zor müşteri konuşmalarını çalışın.", "Koçvari", 10, 0, 5),
+                ("Şikâyetleri öznel bularak ekiple konuşmayın.", "Kaçınmacı", -5, -5, -15),
+            ],
+        ),
+        (
+            "Hafta sonu kampanyasında popüler bir ürün sabah tükendi; çevre mağazada sınırlı stok var.",
+            [
+                ("Onaylı mağazalar arası transfer sürecini hemen başlatın.", "Otoriter", 0, 10, 5),
+                ("Çevre mağaza ve satış ekibiyle ürünleri hangi müşterilere ayıracağınızı planlayın.", "Demokratik", 5, 0, 10),
+                ("Ekibe alternatif ürün önerileri hazırlatıp müşteri iletişimini destekleyin.", "Koçvari", 5, 5, 5),
+                ("Ürün gelene kadar müşterileri bilgilendirmeden bekletin.", "Kaçınmacı", -5, -10, -15),
+            ],
+        ),
+        (
+            "Yeni bir çalışan, yoğun saatte yanlış raf etiketleri bastığını fark etti ve bunu size çekinerek söyledi.",
+            [
+                ("Hatalı etiketleri hemen toplatıp doğrulama kontrolü başlatın.", "Otoriter", -5, 10, 5),
+                ("Çalışana teşekkür edip ekiple etiket kontrolünü birlikte organize edin.", "Demokratik", 5, 0, 10),
+                ("Çalışanla etiket basım adımlarını yeniden uygulayıp destek verin.", "Koçvari", 10, 5, 5),
+                ("Müşteri şikâyeti gelene kadar etiketleri değiştirmeyin.", "Kaçınmacı", -5, -10, -15),
+            ],
+        ),
+    ],
+
+    "Tedarik Zinciri": [
+        (
+            "Kritik bir sevkiyat gümrükte üç gündür bekliyor; 12 mağaza üründe stoksuz kalma riski taşıyor.",
+            [
+                ("Resmî süreci hızlandırmak için müşavirden bugün net aksiyon planı isteyin.", "Otoriter", -5, 10, 5),
+                ("Mağazaları bilgilendirip alternatif stok dağıtımını birlikte planlayın.", "Demokratik", 5, 0, 10),
+                ("Ekiple gecikme nedenini inceleyip geleceğe dönük yedek plan kurun.", "Koçvari", 5, 5, 5),
+                ("Sevkiyat gelene kadar mağazalara bilgi vermeyin.", "Kaçınmacı", -5, -10, -15),
+            ],
+        ),
+        (
+            "Depo kapasitesi sınırına dayandı; yeni sezon ürünleri için boş yer kalmadı.",
+            [
+                ("Onaylı geçici alanı açıp ürün yerleşimini hemen yeniden düzenleyin.", "Otoriter", -5, 10, 0),
+                ("Mağazalarla görüşüp uygun ürünler için erken sevkiyat planlayın.", "Demokratik", 5, 0, 10),
+                ("Depo ekibine yerleşim iyileştirmesi için küçük gruplar kurdurun.", "Koçvari", 10, 5, 5),
+                ("Yeni ürünleri boş koridorlarda geçici olarak biriktirin.", "Kaçınmacı", -10, -10, -15),
+            ],
+        ),
+        (
+            "Yeni depo yönetim sisteminde kıdemli çalışanlar barkod adımlarında zorlanıyor; işlem hataları artıyor.",
+            [
+                ("Hatalı işlemleri durdurup kontrol adımlarını zorunlu hâle getirin.", "Otoriter", -5, 10, 0),
+                ("Çalışanlardan zorlandıkları ekranları öğrenip destek planını birlikte belirleyin.", "Demokratik", 5, 0, 10),
+                ("Deneyimli kullanıcılarla kısa bire bir uygulama seansları düzenleyin.", "Koçvari", 10, 5, 5),
+                ("Hataları dönem sonu değerlendirmesinde ele almayı bekleyin.", "Kaçınmacı", -5, -10, -10),
+            ],
+        ),
+        (
+            "Bir forklift operatörü, acil sevkiyat baskısı nedeniyle dar koridorda güvenlik mesafesinin ihlal edildiğini bildirdi.",
+            [
+                ("O koridordaki operasyonu durdurup güvenli rota belirleyin.", "Otoriter", -5, -5, 15),
+                ("Operatör ve iş güvenliği ekibiyle sevkiyat sırasını yeniden planlayın.", "Demokratik", 5, 0, 10),
+                ("Vardiyaya güvenli geçiş uygulaması yaptırıp yük akışını düzenleyin.", "Koçvari", 5, 5, 10),
+                ("Sevkiyat bitince koridoru incelemek üzere not alın.", "Kaçınmacı", -10, 5, -15),
+            ],
+        ),
+        (
+            "Nakliye firması son dakika araç değişikliği yaptı; yeni araç planlanan paletlerin tamamını alamıyor.",
+            [
+                ("En kritik mağaza paletlerini belirleyip ikinci araç talep edin.", "Otoriter", -5, 10, 5),
+                ("Mağaza ve nakliyeciyle teslim önceliklerini birlikte kararlaştırın.", "Demokratik", 5, 0, 10),
+                ("Planlama ekibiyle araç kapasitesi kontrol adımını yeniden tasarlayın.", "Koçvari", 5, 5, 5),
+                ("Eksik paletleri bildirmeden bir sonraki güne bırakın.", "Kaçınmacı", -5, -10, -15),
+            ],
+        ),
+        (
+            "İade ürünleri gelen sevkiyatla aynı alana bırakıldı; ürünlerin yeniden satışa uygunluğu karışıyor.",
+            [
+                ("İade alanını hemen ayırıp karışan ürünleri karantinaya alın.", "Otoriter", -5, 5, 10),
+                ("Kalite ve depo ekipleriyle ayrıştırma önceliğini birlikte belirleyin.", "Demokratik", 5, 0, 10),
+                ("Ekip liderlerine iade kabul kontrolünü yeniden uygulatın.", "Koçvari", 5, 5, 5),
+                ("Yoğunluk bitene kadar ürünleri aynı alanda tutun.", "Kaçınmacı", -5, -10, -15),
+            ],
+        ),
+        (
+            "Talep tahmini düşük kaldığı için okul dönemi ürünleri üç bölgede erken tükendi.",
+            [
+                ("Mevcut stokları bölgelere göre yeniden dağıtma kararı alın.", "Otoriter", -5, 10, 0),
+                ("Bölge ekipleriyle satış hızlarını karşılaştırıp ortak dağıtım yapın.", "Demokratik", 5, 0, 10),
+                ("Analistlerle tahmin hatasını inceleyip yeni uyarı eşiği oluşturun.", "Koçvari", 5, 5, 5),
+                ("Yeni sipariş gelene kadar mağazaların çözüm bulmasını bekleyin.", "Kaçınmacı", -5, -10, -10),
+            ],
+        ),
+        (
+            "Yağış nedeniyle sevkiyat merkezine gelen kamyonlar gecikiyor; gece vardiyasının mesaisi uzuyor.",
+            [
+                ("Araç kabul sırasını değiştirip kritik yükleri öne alın.", "Otoriter", -5, 10, 0),
+                ("Vardiya ve taşıyıcılarla gerçekçi yeni teslim saatleri belirleyin.", "Demokratik", 5, 0, 10),
+                ("Ekibe görev dönüşümü uygulayıp aşırı yüklenen çalışanları destekleyin.", "Koçvari", 10, 0, 5),
+                ("Kamyonların geliş sırasına göre bekleyip planı değiştirmeyin.", "Kaçınmacı", -5, -10, -10),
+            ],
+        ),
+        (
+            "Bir tedarikçinin kolilerinde ürün kodu etiketleri yanlış; otomatik ayırma hattı kolileri reddediyor.",
+            [
+                ("Hattı koruyup sorunlu kolileri manuel kontrol alanına alın.", "Otoriter", -5, 5, 10),
+                ("Tedarikçi ve kabul ekibiyle düzeltme sırasını birlikte belirleyin.", "Demokratik", 5, 0, 10),
+                ("Kabul ekibiyle etiket doğrulama örneklemesini geliştirip uygulayın.", "Koçvari", 5, 5, 5),
+                ("Etiketleri kontrol etmeden manuel olarak sevkiyata ekleyin.", "Kaçınmacı", -5, 5, -15),
+            ],
+        ),
+        (
+            "Depoda aynı SKU iki farklı lokasyonda görünüyor; sipariş toplama ekibi yanlış rafa gidiyor.",
+            [
+                ("İlgili SKU için toplama işlemini durdurup lokasyonları doğrulayın.", "Otoriter", -5, -5, 10),
+                ("Toplama ve envanter ekipleriyle gerçek lokasyonu birlikte teyit edin.", "Demokratik", 5, 0, 10),
+                ("Ekip lideriyle lokasyon güncelleme kontrolünü yeniden çalışın.", "Koçvari", 5, 5, 5),
+                ("Ekipten ürünü buldukları raftan toplamalarını isteyin.", "Kaçınmacı", -5, 5, -15),
+            ],
+        ),
+        (
+            "Bir bölgeye ayrılan yeni sezon ürünleri yanlış aktarma merkezine yönlendirildi.",
+            [
+                ("Gönderileri durdurup doğru aktarma merkezine yönlendirme başlatın.", "Otoriter", -5, 5, 10),
+                ("Taşıyıcı ve bölge ekibiyle yeni teslim takvimini açıkça paylaşın.", "Demokratik", 5, 0, 10),
+                ("Planlama ekibiyle yönlendirme kontrol noktasını yeniden tasarlayın.", "Koçvari", 5, 5, 5),
+                ("Aktarma merkezinin hatayı kendiliğinden fark etmesini bekleyin.", "Kaçınmacı", -5, -10, -15),
+            ],
+        ),
+        (
+            "Gece vardiyasında tarayıcı cihazların yarısı şarj olmuyor; sabah sevkiyatı yaklaşırken toplama yavaşladı.",
+            [
+                ("Çalışanları çalışan cihazlara göre yeniden dağıtıp teknik destek çağırın.", "Otoriter", -5, 10, 5),
+                ("Ekipten darboğazları öğrenip kritik siparişleri birlikte sıralayın.", "Demokratik", 5, 0, 10),
+                ("Yedek cihaz ve şarj kontrol rutini için çalışanlara sorumluluk verin.", "Koçvari", 5, 5, 5),
+                ("Cihazlar düzelene kadar tüm siparişleri bekletin.", "Kaçınmacı", -5, -15, -10),
+            ],
+        ),
+    ],
+
+    "Satın Alma": [
+        (
+            "Ana tedarikçi sezon başlamasına iki hafta kala fiyatlarda %18 artış bildirdi.",
+            [
+                ("Sözleşme maddelerini kontrol edip fiyat değişikliğine resmî itiraz edin.", "Otoriter", -5, 5, 5),
+                ("Tedarikçiyle miktar ve takvim seçeneklerini masaya yatırın.", "Demokratik", 5, 0, 10),
+                ("Ekiple alternatif tedarikçi ve maliyet senaryoları hazırlayın.", "Koçvari", 5, 5, 5),
+                ("Artışı değerlendirmeden kabul edip bütçe farkını sonra ele alın.", "Kaçınmacı", -5, -5, -15),
+            ],
+        ),
+        (
+            "Onaylı numuneye kıyasla seri üretimde kumaş kalitesi düştü; teslim tarihine on gün kaldı.",
+            [
+                ("Uygunsuz partiyi durdurup sözleşmedeki kalite şartlarını uygulayın.", "Otoriter", -5, -10, 15),
+                ("Kalite ve üretim ekipleriyle uygun partilerin teslim seçeneğini görüşün.", "Demokratik", 5, -5, 10),
+                ("Ekiple hızlı yeniden numune ve düzeltme planı oluşturun.", "Koçvari", 5, 0, 5),
+                ("Tarih kaçmasın diye kalite farkını bildirmeden kabul edin.", "Kaçınmacı", -5, 10, -15),
+            ],
+        ),
+        (
+            "Yeni bir tedarikçi düşük fiyat öneriyor ancak gerekli sürdürülebilirlik belgelerini henüz paylaşmadı.",
+            [
+                ("Belgeler tamamlanmadan sipariş onayını vermeyin.", "Otoriter", 0, -5, 15),
+                ("Uyum ekibi ve tedarikçiyle doğrulama takvimi belirleyin.", "Demokratik", 5, 0, 10),
+                ("Ekibe alternatif uygun tedarikçileri karşılaştırma görevi verin.", "Koçvari", 5, 5, 5),
+                ("Belgeleri sonra isteriz diyerek siparişi hemen açın.", "Kaçınmacı", -5, 10, -15),
+            ],
+        ),
+        (
+            "Kategori yöneticisi onay almadan tedarikçiye sözlü fiyat taahhüdünde bulundu.",
+            [
+                ("Taahhüdün bağlayıcılığını inceleyip onay sürecini durdurun.", "Otoriter", -5, 5, 10),
+                ("Yönetici ve tedarikçiyle şartları şeffaf biçimde yeniden görüşün.", "Demokratik", 5, 0, 10),
+                ("Yöneticiyle özel görüşüp yetki sınırları için gelişim planı yapın.", "Koçvari", 10, 0, 5),
+                ("Konu büyümesin diye taahhüdü sorgulamadan kabul edin.", "Kaçınmacı", 0, -5, -15),
+            ],
+        ),
+        (
+            "Yeni sezon çocuk ürünlerinde iki tedarikçi aynı teslim tarihini verdi; birinin kapasite geçmişi zayıf.",
+            [
+                ("Geç teslim geçmişi olan tedarikçiye kapasite kanıtı şartı koyun.", "Otoriter", -5, 5, 10),
+                ("Ekipçe fiyat, kalite ve teslim risklerini puanlayarak karar verin.", "Demokratik", 5, 0, 10),
+                ("Genç satın almacıya risk karşılaştırması hazırlatıp birlikte gözden geçirin.", "Koçvari", 10, 0, 5),
+                ("Sadece düşük fiyatı seçip geçmiş performansı dikkate almayın.", "Kaçınmacı", -5, 5, -15),
+            ],
+        ),
+        (
+            "Onay bekleyen ambalaj değişikliği ürün başına maliyeti düşürüyor ama raf görünümünü etkileyebilir.",
+            [
+                ("Tasarım onayı alınana kadar ambalaj değişikliğini bekletin.", "Otoriter", 0, -5, 10),
+                ("Mağaza ve tasarım ekipleriyle küçük bir karşılaştırma testi planlayın.", "Demokratik", 5, 0, 10),
+                ("Ekibe maliyet ve müşteri deneyimi etkisini ölçme görevi verin.", "Koçvari", 5, 5, 5),
+                ("Tasarruf için deneme yapmadan tüm siparişleri değiştirin.", "Kaçınmacı", -5, 10, -10),
+            ],
+        ),
+        (
+            "Döviz kurundaki ani artış, imzalanmamış sezon siparişlerinin bütçesini aştı.",
+            [
+                ("Yeni siparişleri kısa süre durdurup bütçe sınırını yeniden belirleyin.", "Otoriter", -5, -5, 10),
+                ("Finans ve kategori ekipleriyle ürün önceliklerini birlikte düzenleyin.", "Demokratik", 5, 0, 10),
+                ("Satın alma ekibiyle farklı kur senaryoları hazırlayıp eğitim yapın.", "Koçvari", 5, 5, 5),
+                ("Bütçe aşımını dönem sonunda bildirmek üzere siparişleri açın.", "Kaçınmacı", -5, 10, -15),
+            ],
+        ),
+        (
+            "Tedarikçi, test raporu geciktiği için bebek ürünlerinin sevkini bekletiyor.",
+            [
+                ("Rapor gelmeden sevkiyata onay vermeyip takvimi güncelleyin.", "Otoriter", -5, -5, 15),
+                ("Kalite ve planlama ekipleriyle mağazalara alternatif ürün bulun.", "Demokratik", 5, 0, 10),
+                ("Ekibe test takibini erken uyarı listesine ekleme görevi verin.", "Koçvari", 5, 5, 5),
+                ("Raporu teslimden sonra almak üzere sevkiyatı başlatın.", "Kaçınmacı", -5, 10, -15),
+            ],
+        ),
+        (
+            "İki tedarikçi aynı kumaşı sunuyor; uygun fiyatlı olanın teslim süreleri son üç siparişte değişti.",
+            [
+                ("Teslim güvencesi olmadan uygun fiyatlı teklifi onaylamayın.", "Otoriter", -5, 0, 10),
+                ("Planlama ekibiyle gecikmenin mağaza etkisini değerlendirip karar verin.", "Demokratik", 5, 0, 10),
+                ("Ekibe kademeli sipariş ve yedek tedarik planı hazırlatın.", "Koçvari", 5, 5, 5),
+                ("Geçmiş gecikmeleri önemsemeyip tüm hacmi düşük fiyatlı firmaya verin.", "Kaçınmacı", -5, 5, -15),
+            ],
+        ),
+        (
+            "Numune toplantısında kalite sorumlusu, seçilen ürünün yıkama testinin tekrar edilmesini istedi.",
+            [
+                ("Test sonucu gelene kadar nihai sipariş onayını bekletin.", "Otoriter", -5, -5, 15),
+                ("Kalite ve kategori ekiplerinin gerekçelerini açıkça karşılaştırın.", "Demokratik", 5, 0, 10),
+                ("Ekibe daha erken numune test takvimi tasarlatın.", "Koçvari", 5, 5, 5),
+                ("Toplantı uzamasın diye test talebini kayda almadan geçin.", "Kaçınmacı", -5, 10, -15),
+            ],
+        ),
+        (
+            "Bir tedarikçinin teklifindeki ödeme süresi değişikliği toplam maliyeti artırıyor; ekip sadece birim fiyata baktı.",
+            [
+                ("Kararı durdurup toplam maliyet hesabı isteyin.", "Otoriter", -5, 5, 10),
+                ("Finans ve satın alma ekibiyle ödeme şartlarını birlikte karşılaştırın.", "Demokratik", 5, 0, 10),
+                ("Ekibe toplam maliyet hesabı için standart şablon hazırlatın.", "Koçvari", 5, 5, 5),
+                ("Birim fiyat düşük diye diğer şartları incelemeden imzalayın.", "Kaçınmacı", -5, 5, -15),
+            ],
+        ),
+        (
+            "Üretici, teslimatı yetiştirmek için onaylı üretim tesisinin dışındaki bir atölyeyi kullanmak istiyor.",
+            [
+                ("Tesis uygunluğu doğrulanana kadar üretim değişikliğini reddedin.", "Otoriter", -5, -5, 15),
+                ("Uyum ve kalite ekipleriyle onaylanabilir seçenekleri görüşün.", "Demokratik", 5, 0, 10),
+                ("Ekibe alternatif kapasite ve yeni teslim planı hazırlatın.", "Koçvari", 5, 5, 5),
+                ("Atölye bilgisini kayda geçirmeden üretimi kabul edin.", "Kaçınmacı", -5, 10, -15),
+            ],
+        ),
+    ],
+
+    "İnsan Kaynakları": [
+        (
+            "İki çalışan aynı terfi için güçlü aday; ikisi de kararın adil olmasını bekliyor.",
+            [
+                ("Önceden belirlenmiş kriterlere göre kararı verip gerekçesini açıklayın.", "Otoriter", -5, 10, 5),
+                ("Değerlendirme kurulundan aynı kriterlerle bağımsız görüş alın.", "Demokratik", 5, -5, 15),
+                ("Her adayla gelişim alanı ve sonraki fırsatları ayrı ayrı konuşun.", "Koçvari", 10, 0, 10),
+                ("Tepki gelmesin diye terfi kararını belirsiz süre erteleyin.", "Kaçınmacı", -10, -5, -15),
+            ],
+        ),
+        (
+            "Bir yönetici hakkında anonim mobbing şikâyeti geldi; iddialar henüz doğrulanmadı.",
+            [
+                ("Gizlilik ve tarafsızlık ilkeleriyle resmî inceleme başlatın.", "Otoriter", 0, -5, 15),
+                ("İlgili prosedür uyarınca tarafların ayrı ayrı dinlenmesini sağlayın.", "Demokratik", 5, -5, 10),
+                ("İnceleme ekibine güvenli bildirim sürecinde destek verin.", "Koçvari", 5, 0, 10),
+                ("İsimsiz diye şikâyeti kayda almadan kapatın.", "Kaçınmacı", -15, 0, -15),
+            ],
+        ),
+        (
+            "Yeni işe alınanların üçte biri ilk ayda ayrılıyor; nedenler kayıt altına alınmamış.",
+            [
+                ("Çıkış görüşmelerini standart hâle getirip ilk ay verilerini isteyin.", "Otoriter", -5, 10, 5),
+                ("Yeni çalışanlar ve yöneticilerle başlangıç deneyimini birlikte inceleyin.", "Demokratik", 5, 0, 10),
+                ("Mentorluk ve ilk hafta görüşmelerini pilot olarak başlatın.", "Koçvari", 10, 5, 5),
+                ("Ayrılmaların sezonluk olduğunu varsayıp süreçleri değiştirmeyin.", "Kaçınmacı", -5, -10, -10),
+            ],
+        ),
+        (
+            "Bir çalışan, vardiya planlarının aile sorumlulukları açısından sürekli değiştiğini söylüyor.",
+            [
+                ("Planı ve mevzuat gerekliliklerini kontrol edip düzenli yayımlama kuralı koyun.", "Otoriter", 0, 5, 10),
+                ("Çalışan ve yöneticisiyle uygulanabilir vardiya seçeneklerini görüşün.", "Demokratik", 5, 0, 10),
+                ("Yöneticiye öngörülebilir planlama için destek ve araç sağlayın.", "Koçvari", 10, 5, 5),
+                ("Konuyu kişisel sorun sayıp kayıt altına almayın.", "Kaçınmacı", -10, 0, -15),
+            ],
+        ),
+        (
+            "Performans döneminde bir yönetici tüm ekibine aynı puanı verdi; gerekçe yazmamış.",
+            [
+                ("Değerlendirmeleri gerekçeleriyle yeniden hazırlamasını isteyin.", "Otoriter", -5, 5, 10),
+                ("Yöneticiyle kriterleri gözden geçirip kalibrasyon toplantısı yapın.", "Demokratik", 5, 0, 10),
+                ("Yöneticiye kanıta dayalı geri bildirim konusunda koçluk verin.", "Koçvari", 10, 0, 5),
+                ("Takvim sıkışık diye aynı puanları değiştirmeden onaylayın.", "Kaçınmacı", -5, 10, -15),
+            ],
+        ),
+        (
+            "Bir çalışanın izin talebi sistemde onaylı görünüyor; yöneticisi vardiyada olmasını bekliyor.",
+            [
+                ("Sistem kayıtlarını kontrol edip onaylı izni esas alarak vardiyayı düzeltin.", "Otoriter", 0, 5, 10),
+                ("Çalışan ve yöneticiyle hatanın nasıl oluştuğunu ayrı ayrı netleştirin.", "Demokratik", 5, 0, 10),
+                ("Yöneticiye izin planlama ve yedekleme adımlarında destek verin.", "Koçvari", 10, 5, 5),
+                ("Çalışandan iznini iptal etmesini isteyip kaydı sonra düzeltin.", "Kaçınmacı", -10, 5, -15),
+            ],
+        ),
+        (
+            "Çıkış görüşmelerinde farklı ekiplerden çalışanlar eğitim eksikliğini tekrar tekrar dile getiriyor.",
+            [
+                ("Yüksek riskli roller için zorunlu eğitim listesini hemen güncelleyin.", "Otoriter", -5, 5, 10),
+                ("Ekiplerle ihtiyaçları belirleyip öncelikli eğitimleri birlikte seçin.", "Demokratik", 5, 0, 10),
+                ("Deneyimli çalışanlarla iç mentorluk pilotu oluşturun.", "Koçvari", 10, 5, 5),
+                ("Bütçe dönemi gelene kadar geri bildirimleri arşivleyin.", "Kaçınmacı", -5, -5, -10),
+            ],
+        ),
+        (
+            "Adaya gönderilen teklif mektubunda maaş aralığı yanlış yazılmış; aday teklifi kabul etmek üzere.",
+            [
+                ("Hatalı teklifi hemen durdurup doğru koşulları yazılı olarak bildirin.", "Otoriter", -5, -5, 15),
+                ("Adaya hatayı açıkça anlatıp seçeneklerini değerlendirmesi için süre tanıyın.", "Demokratik", 5, -5, 10),
+                ("İşe alım ekibiyle teklif kontrolünü çift onaylı hâle getirin.", "Koçvari", 5, 5, 5),
+                ("Aday kabul ettikten sonra hatayı açıklamayı planlayın.", "Kaçınmacı", -5, 5, -15),
+            ],
+        ),
+        (
+            "Bir ekipte fazla mesai kayıtları artıyor ancak iş yükü raporları bunu açıklamıyor.",
+            [
+                ("Kayıtları ve yasal sınırları inceleyip yöneticiden plan isteyin.", "Otoriter", -5, 5, 10),
+                ("Çalışanlar ve yöneticiyle gerçek iş yükünü güvenli biçimde konuşun.", "Demokratik", 5, 0, 10),
+                ("Yöneticiye kapasite planı ve görev dağılımı konusunda destek verin.", "Koçvari", 10, 5, 5),
+                ("Ay sonuna kadar artışı sorgulamadan onaylayın.", "Kaçınmacı", -5, 5, -15),
+            ],
+        ),
+        (
+            "Yeni başlayan bir çalışan, oryantasyonda anlatılan görevlerle fiilî işinin farklı olduğunu bildiriyor.",
+            [
+                ("Görev tanımını ve uygulamayı kontrol edip uyuşmazlığı düzeltin.", "Otoriter", 0, 5, 10),
+                ("Çalışan ve yöneticiyle beklentileri ortak görüşmede netleştirin.", "Demokratik", 5, 0, 10),
+                ("Yöneticiyle oryantasyon kontrol listesi geliştirip çalışana rehber sağlayın.", "Koçvari", 10, 5, 5),
+                ("Alışması için çalışandan birkaç ay beklemesini isteyin.", "Kaçınmacı", -5, -5, -10),
+            ],
+        ),
+        (
+            "Bir yönetici, çalışanına yapacağı zor geri bildirim görüşmesine İK'nın katılmasını istiyor.",
+            [
+                ("Görüşmenin amacını ve belgeleri netleştirip uygun süreci belirleyin.", "Otoriter", -5, 5, 10),
+                ("İki tarafın da kendini ifade edebileceği görüşme çerçevesi kurun.", "Demokratik", 5, 0, 10),
+                ("Yöneticiyle geri bildirim dilini önceden çalışıp görüşmeyi destekleyin.", "Koçvari", 10, 5, 5),
+                ("Görüşmeyi yöneticinin tek başına çözmesi gerektiğini söyleyip çekilin.", "Kaçınmacı", -5, 0, -10),
+            ],
+        ),
+        (
+            "Anonim çalışan anketinde bir departmanda güven puanı ciddi biçimde düştü; neden bilinmiyor.",
+            [
+                ("Sonuçları yöneticiyle paylaşıp ölçülebilir iyileştirme planı isteyin.", "Otoriter", -5, 5, 5),
+                ("Gizliliği koruyan gönüllü görüşmelerle nedenleri araştırın.", "Demokratik", 5, 0, 10),
+                ("Yönetici ve ekibe düzenli geri bildirim oturumları için rehberlik edin.", "Koçvari", 10, 5, 5),
+                ("Bir sonraki anketi bekleyip konuyu açmayın.", "Kaçınmacı", -5, -5, -15),
+            ],
+        ),
+    ],
+
+    "Pazarlama": [
+        (
+            "İş birliği yapılan bir içerik üreticisi, kampanyadan bir gün önce tartışmalı bir paylaşım yaptı.",
+            [
+                ("Sözleşme ve marka riskini değerlendirip yayını geçici durdurun.", "Otoriter", -5, -5, 10),
+                ("İletişim ve hukuk ekipleriyle ortak yanıt belirleyin.", "Demokratik", 5, 0, 10),
+                ("Ekibe yedek içerik ve iletişim akışı hazırlatın.", "Koçvari", 5, 5, 5),
+                ("Paylaşımın unutulmasını bekleyip kampanyayı değiştirmeyin.", "Kaçınmacı", -5, 5, -15),
+            ],
+        ),
+        (
+            "Kampanyanın ana görseli lansmana 24 saat kala teslim edilmedi.",
+            [
+                ("Kritik kanalları seçip sade görselle yayına çıkma kararı alın.", "Otoriter", -5, 10, 0),
+                ("Tasarım ekibiyle kapsamı ve gerçekçi teslim saatini birlikte netleştirin.", "Demokratik", 5, 0, 10),
+                ("Tasarımcıları görevlerine göre eşleştirip engelleri kaldırın.", "Koçvari", 10, 5, 5),
+                ("Son ana kadar bekleyip diğer ekipleri bilgilendirmeyin.", "Kaçınmacı", -5, -10, -15),
+            ],
+        ),
+        (
+            "Rakip marka planladığınız kampanyaya benzer bir fikri bir hafta önce yayımladı.",
+            [
+                ("Fark yaratan ürün mesajını öne çıkarıp takvimi koruyun.", "Otoriter", -5, 10, 0),
+                ("Ekipçe benzer noktaları inceleyip yaratıcı içeriği revize edin.", "Demokratik", 5, 0, 10),
+                ("Genç ekibe hızlı müşteri testi yaptırıp öğrendiklerini uygulayın.", "Koçvari", 10, 5, 5),
+                ("Karar vermeyip kampanyayı sessizce erteleyin.", "Kaçınmacı", -5, -10, -10),
+            ],
+        ),
+        (
+            "Sosyal medyada yanlış fiyat bilgisini içeren kampanya paylaşımı kısa sürede yayıldı.",
+            [
+                ("Yanlış içeriği durdurup doğru fiyatla açık düzeltme yayımlayın.", "Otoriter", -5, 5, 10),
+                ("Satış ve müşteri hizmetleriyle müşterilere ortak açıklama hazırlayın.", "Demokratik", 5, 0, 10),
+                ("Ekiple yayın öncesi fiyat doğrulama kontrolü oluşturun.", "Koçvari", 5, 5, 5),
+                ("Kimse fark etmez diye paylaşımı sessizce silin.", "Kaçınmacı", -5, 5, -15),
+            ],
+        ),
+        (
+            "Bir reklam grubunda bütçenin yarısı harcandı ancak satış dönüşümü hedefin çok altında.",
+            [
+                ("Düşük performanslı reklamları durdurup bütçeyi koruyun.", "Otoriter", -5, 5, 5),
+                ("Analiz ekibiyle kanalları karşılaştırıp yeni dağılıma karar verin.", "Demokratik", 5, 0, 10),
+                ("Ekibe küçük yaratıcı testler yaptırıp öğrenme planı çıkarın.", "Koçvari", 5, 5, 5),
+                ("Kampanya bitene kadar performans düşüşünü raporlamayın.", "Kaçınmacı", -5, -10, -15),
+            ],
+        ),
+        (
+            "Yeni sezon tanıtımında kullanılan ürün görseli, mağazalardaki gerçek renk tonuyla uyuşmuyor.",
+            [
+                ("Görseli kontrol için yayından çekip doğru ürün görseli isteyin.", "Otoriter", -5, -5, 10),
+                ("Ürün ve müşteri deneyimi ekipleriyle farkı değerlendirip açıklayın.", "Demokratik", 5, 0, 10),
+                ("Tasarım ekibiyle ürün doğrulama adımı oluşturun.", "Koçvari", 5, 5, 5),
+                ("Renk farkını küçük görüp reklamı değiştirmeyin.", "Kaçınmacı", -5, 5, -15),
+            ],
+        ),
+        (
+            "E-posta kampanyasında yanlış müşteri grubuna çocuk ürünleri mesajı gönderildi.",
+            [
+                ("Gönderimi durdurup kapsamı ve veri güvenliği etkisini inceleyin.", "Otoriter", -5, 0, 10),
+                ("CRM ve iletişim ekipleriyle uygun düzeltme mesajını planlayın.", "Demokratik", 5, 0, 10),
+                ("Ekiple hedef kitle seçimi için çift kontrol uygulaması başlatın.", "Koçvari", 5, 5, 5),
+                ("Şikâyet gelmedikçe hatayı kayda geçirmeyin.", "Kaçınmacı", -5, 5, -15),
+            ],
+        ),
+        (
+            "Bir mağaza kampanya afişlerini taktı ancak dijital reklamda farklı başlangıç tarihi görünüyor.",
+            [
+                ("Yanlış tarihli reklamı durdurup tek resmî takvim yayımlayın.", "Otoriter", -5, 5, 10),
+                ("Mağaza ve dijital ekiplerle hangi kanalların etkilendiğini belirleyin.", "Demokratik", 5, 0, 10),
+                ("Kampanya ekibiyle tarih kontrol çizelgesini birlikte geliştirin.", "Koçvari", 5, 5, 5),
+                ("Müşteriler sorarsa mağazaların açıklamasını bekleyin.", "Kaçınmacı", -5, -5, -15),
+            ],
+        ),
+        (
+            "Yeni koleksiyon için hazırlanan sloganın başka bir markanın sloganına çok benzediği fark edildi.",
+            [
+                ("Sloganın kullanımını durdurup hukuk ve marka incelemesi isteyin.", "Otoriter", -5, -5, 15),
+                ("Yaratıcı ekip ve hukukla alternatif mesajları birlikte değerlendirin.", "Demokratik", 5, 0, 10),
+                ("Ekibe özgünlük kontrolü içeren yeni yaratıcı süreç tasarlatın.", "Koçvari", 5, 5, 5),
+                ("Lansman yaklaşınca benzerliği görmezden gelin.", "Kaçınmacı", -5, 5, -15),
+            ],
+        ),
+        (
+            "Sosyal medya ekibi müşteri yorumlarına çok farklı tonlarda yanıt veriyor.",
+            [
+                ("Riskli yanıtları durdurup geçici yanıt ilkeleri yayımlayın.", "Otoriter", -5, 5, 5),
+                ("Ekipten örnekleri toplayıp ortak marka dili belirleyin.", "Demokratik", 5, 0, 10),
+                ("Editörlerle gerçek yorumlar üzerinden kısa uygulama çalışın.", "Koçvari", 10, 5, 5),
+                ("Yorumları bireysel üslup meselesi sayıp müdahale etmeyin.", "Kaçınmacı", -5, -5, -10),
+            ],
+        ),
+        (
+            "Mağazalardan gelen geri bildirim, tanıtılan ürüne olan talebin eldeki stoktan fazla olduğunu gösteriyor.",
+            [
+                ("Stok netleşene kadar ürün odaklı reklamın hızını düşürün.", "Otoriter", -5, 0, 10),
+                ("Tedarik ve mağazalarla bölgesel reklam planını yeniden kurun.", "Demokratik", 5, 0, 10),
+                ("Ekibe benzer stoktaki ürünler için alternatif içerik hazırlatın.", "Koçvari", 5, 5, 5),
+                ("Stok bilgisine bakmadan reklamı aynı hızda sürdürün.", "Kaçınmacı", -5, 5, -15),
+            ],
+        ),
+        (
+            "Yerel bir kampanyada kullanılan görsel, farklı bir şehirdeki hedef kitle tarafından yanlış anlaşıldı.",
+            [
+                ("İlgili bölgedeki yayını durdurup görseli incelemeye alın.", "Otoriter", -5, -5, 10),
+                ("Yerel ekiplerden geri bildirim alıp uygun anlatımı birlikte seçin.", "Demokratik", 5, 0, 10),
+                ("Ekiple bölgesel ön test süreci oluşturup yeni görsel geliştirin.", "Koçvari", 5, 5, 5),
+                ("Geri bildirimi küçük bir grup ile sınırlı görüp değişiklik yapmayın.", "Kaçınmacı", -5, 5, -15),
+            ],
+        ),
+    ],
+
+    "Finans": [
+        (
+            "Üst yönetime sunumdan bir gün önce aylık raporda ciddi bir hesaplama hatası bulundu.",
+            [
+                ("Sunumu durdurmadan raporu düzeltip değişikliği yönetime bildirin.", "Otoriter", -5, 5, 10),
+                ("İlgili ekiplerle hatanın kapsamını teyit edip revize rapor hazırlayın.", "Demokratik", 5, 0, 10),
+                ("Ekiple tekrarını önleyecek kontrol noktası tasarlayın.", "Koçvari", 5, 5, 5),
+                ("Hata fark edilmez diye eski raporu sunun.", "Kaçınmacı", -5, 5, -15),
+            ],
+        ),
+        (
+            "Pazarlama departmanı bütçesini %40 aştı ve ek onay istiyor.",
+            [
+                ("Yeni harcamayı durdurup gerekçeli onay dosyası isteyin.", "Otoriter", -5, 5, 5),
+                ("Pazarlamayla harcama getirisini inceleyip öncelikleri birlikte seçin.", "Demokratik", 5, 0, 10),
+                ("Ekiplerle tasarruf ve aşamalı finansman seçenekleri geliştirin.", "Koçvari", 5, 5, 5),
+                ("Talebi incelemeden bütçe farkını gelecek aya taşıyın.", "Kaçınmacı", -5, 5, -15),
+            ],
+        ),
+        (
+            "İç denetim öncesinde bazı harcama kayıtlarında belge eksikliği görüldü.",
+            [
+                ("Eksikleri kayıt altına alıp denetçiye şeffafça bildirin.", "Otoriter", -5, 0, 15),
+                ("İlgili ekiplerle belgeleri mevzuata uygun biçimde tamamlayın.", "Demokratik", 5, 0, 10),
+                ("Muhasebe ekibiyle belge kontrol listesini kalıcı olarak iyileştirin.", "Koçvari", 5, 5, 5),
+                ("Denetçi sormazsa eksiklerden bahsetmeyin.", "Kaçınmacı", -5, 5, -15),
+            ],
+        ),
+        (
+            "Tedarikçinin aynı faturayı iki kez gönderdiği fark edildi; ikinci ödeme henüz yapılmadı.",
+            [
+                ("İkinci ödemeyi bloke edip fatura kayıtlarını karşılaştırın.", "Otoriter", -5, 10, 10),
+                ("Satın alma ve tedarikçiyle durumu birlikte doğrulayın.", "Demokratik", 5, 0, 10),
+                ("Ekiple mükerrer fatura uyarı kontrolü oluşturun.", "Koçvari", 5, 5, 5),
+                ("Yoğunluk azalınca bakmak üzere faturayı sırada bırakın.", "Kaçınmacı", -5, -5, -15),
+            ],
+        ),
+        (
+            "Yıl sonu kapanışında iki departmanın giderleri yanlış maliyet merkezine yazılmış.",
+            [
+                ("Kapanıştan önce kayıtları doğrulatıp düzeltme yapın.", "Otoriter", -5, 5, 10),
+                ("Departmanlarla gider sahipliğini tek tek teyit edin.", "Demokratik", 5, 0, 10),
+                ("Ekiple maliyet merkezi seçimi için yeni kontrol şablonu kurun.", "Koçvari", 5, 5, 5),
+                ("Toplam şirket gideri aynı diye sınıflandırmayı değiştirmeyin.", "Kaçınmacı", -5, 5, -15),
+            ],
+        ),
+        (
+            "Nakit akışı tahmininde büyük bir tahsilatın bir hafta gecikeceği öğrenildi.",
+            [
+                ("Ödeme önceliklerini ve yükümlülükleri hemen yeniden planlayın.", "Otoriter", -5, 5, 10),
+                ("İlgili ekiplerle tahsilat takvimi ve alternatifleri görüşün.", "Demokratik", 5, 0, 10),
+                ("Analiste farklı gecikme senaryoları hazırlatıp değerlendirin.", "Koçvari", 5, 5, 5),
+                ("Nakit planını değiştirmeden tahsilatın geleceğini varsayın.", "Kaçınmacı", -5, 5, -15),
+            ],
+        ),
+        (
+            "Bir çalışan, ödeme talimatındaki IBAN'ın tedarikçinin önceki kaydından farklı olduğunu fark etti.",
+            [
+                ("Ödemeyi durdurup doğrulanmış kanaldan hesap teyidi alın.", "Otoriter", -5, -5, 15),
+                ("Satın alma ve finansla değişiklik kaynağını birlikte inceleyin.", "Demokratik", 5, 0, 10),
+                ("Ekiple hesap değişikliği onayı için çift kontrol süreci kurun.", "Koçvari", 5, 5, 5),
+                ("Tedarikçi e-postasına güvenip ödemeyi gönderin.", "Kaçınmacı", -5, 10, -15),
+            ],
+        ),
+        (
+            "Yeni mağaza yatırımı için beklenen satış tahmini iki farklı raporda uyuşmuyor.",
+            [
+                ("Yatırım onayını veri kaynağı netleşene kadar bekletin.", "Otoriter", -5, -5, 10),
+                ("Finans ve mağazacılık ekipleriyle varsayımları karşılaştırın.", "Demokratik", 5, 0, 10),
+                ("Analistlere ortak tahmin şablonu hazırlatıp test edin.", "Koçvari", 5, 5, 5),
+                ("Daha yüksek satış gösteren raporu seçip ilerleyin.", "Kaçınmacı", -5, 10, -15),
+            ],
+        ),
+        (
+            "Bir departman gideri yanlış döneme kaydedildiği için aylık sonuç olduğundan iyi görünüyor.",
+            [
+                ("Dönemsellik hatasını düzelttirip raporu yeniden yayımlayın.", "Otoriter", -5, 0, 15),
+                ("Muhasebe ve ilgili departmanla işlem tarihini teyit edin.", "Demokratik", 5, 0, 10),
+                ("Ekiple kapanış kontrolüne dönem doğrulaması ekleyin.", "Koçvari", 5, 5, 5),
+                ("Yıllık toplam değişmez diye aylık sonucu değiştirmeyin.", "Kaçınmacı", -5, 5, -15),
+            ],
+        ),
+        (
+            "Üç mağazanın elektrik gideri öngörülenin üstünde; sebep henüz bilinmiyor.",
+            [
+                ("Mağaza bazında tüketim ve fatura kontrolü başlatın.", "Otoriter", -5, 5, 5),
+                ("Mağazacılık ve tesis ekipleriyle olası nedenleri inceleyin.", "Demokratik", 5, 0, 10),
+                ("Analistle tüketim uyarı eşiği ve takip raporu oluşturun.", "Koçvari", 5, 5, 5),
+                ("Artışı mevsimsel sayıp hiçbir kontrol yapmayın.", "Kaçınmacı", -5, -5, -10),
+            ],
+        ),
+        (
+            "Bütçe toplantısında iki ekip aynı tasarruf tutarını kendi planına yazmış.",
+            [
+                ("Çifte sayılan tutarı çıkarıp bütçe tablolarını düzeltin.", "Otoriter", -5, 5, 10),
+                ("İki ekiple tasarrufun sahipliğini ve hesabını netleştirin.", "Demokratik", 5, 0, 10),
+                ("Ekipçe ortak tasarruf takip çizelgesi oluşturun.", "Koçvari", 5, 5, 5),
+                ("Toplam hedef tutuyor diye çifte kaydı bırakın.", "Kaçınmacı", -5, 5, -15),
+            ],
+        ),
+        (
+            "Denetim ekibi, masraf onaylarının bazılarının ödeme sonrasında verildiğini fark etti.",
+            [
+                ("İlgili işlemleri inceleyip yetki ihlallerini raporlayın.", "Otoriter", -5, 0, 15),
+                ("Departman yöneticileriyle onay darboğazını birlikte analiz edin.", "Demokratik", 5, 0, 10),
+                ("Ekiple ödeme öncesi otomatik onay kontrolü tasarlayın.", "Koçvari", 5, 5, 5),
+                ("Geçmiş ödemeler kapanmış diye konuyu kayda almayın.", "Kaçınmacı", -5, 5, -15),
+            ],
+        ),
+    ],
+
+    "Bilgi Teknolojileri": [
+        (
+            "Sistem güncellemesinden sonra bazı mağaza kasaları işlem yapamaz hâle geldi.",
+            [
+                ("Güncellemeyi geri alıp önce kasa hizmetini ayağa kaldırın.", "Otoriter", -5, 10, 5),
+                ("Mağazalar ve teknik ekiple etki alanını netleştirip plan paylaşın.", "Demokratik", 5, 0, 10),
+                ("Ekibi hata çözümü ve iletişim işlerine ayırıp süreci yönetin.", "Koçvari", 5, 5, 5),
+                ("Sorunun kendiliğinden düzelmesini bekleyin.", "Kaçınmacı", -10, -15, -15),
+            ],
+        ),
+        (
+            "Kıdemli bir çalışan otomasyon projesinin görevini ortadan kaldıracağından endişe ediyor.",
+            [
+                ("Proje kararını netleştirip görev geçiş takvimi açıklayın.", "Otoriter", -5, 10, 0),
+                ("Çalışanın kaygılarını dinleyip yeni rol seçeneklerini konuşun.", "Demokratik", 5, 0, 10),
+                ("Çalışan için beceri geliştirme ve pilot görev planı oluşturun.", "Koçvari", 10, 5, 5),
+                ("Endişeyi konuşmadan projeyi yürütmeye devam edin.", "Kaçınmacı", -10, -5, -10),
+            ],
+        ),
+        (
+            "Gece yarısı müşteri verilerini etkileyebilecek bir güvenlik açığı bildirildi.",
+            [
+                ("Olay müdahale planını başlatıp gerekli erişimleri sınırlayın.", "Otoriter", -5, -5, 15),
+                ("Güvenlik ve ilgili ekiplerle etki alanını teyit edip iletişim kurun.", "Demokratik", 5, 0, 10),
+                ("Ekibi inceleme ve kayıt görevlerine ayırıp koordineli çalıştırın.", "Koçvari", 5, 5, 10),
+                ("Sabah mesai başlayana kadar olayı bildirmeyin.", "Kaçınmacı", -5, 5, -15),
+            ],
+        ),
+        (
+            "Yeni uygulama sürümünde stok ekranı geç açılıyor; mağazalar işlerini kâğıtla takip etmeye başladı.",
+            [
+                ("Sürümü geri alma ölçütünü uygulayıp sorunu önceliklendirin.", "Otoriter", -5, 5, 10),
+                ("Mağazalardan etki örnekleri toplayıp teknik ekiple öncelik belirleyin.", "Demokratik", 5, 0, 10),
+                ("Geliştiricilerle performans ölçümü ve test adımı oluşturun.", "Koçvari", 5, 5, 5),
+                ("Yavaşlığı normal sayıp sonraki sürümü bekleyin.", "Kaçınmacı", -5, -10, -15),
+            ],
+        ),
+        (
+            "Teslime üç gün kala yazılım ekibi kritik bir entegrasyon testinin hiç yapılmadığını fark etti.",
+            [
+                ("Teslim kararını durdurup kritik testi hemen planlayın.", "Otoriter", -5, -5, 15),
+                ("İş birimiyle riskleri paylaşarak gerçekçi teslim kapsamını seçin.", "Demokratik", 5, 0, 10),
+                ("Ekibe risk temelli test listesi hazırlatıp süreci iyileştirin.", "Koçvari", 5, 5, 5),
+                ("Test yapılmadığını belirtmeden sürümü yayımlayın.", "Kaçınmacı", -5, 10, -15),
+            ],
+        ),
+        (
+            "Destek talepleri aynı hata için artıyor ama ekip her talebi ayrı ayrı çözüyor.",
+            [
+                ("Ortak hata kaydı açıp tek çözüm ve sorumlu belirleyin.", "Otoriter", -5, 10, 5),
+                ("Destek ve geliştirme ekipleriyle kalıcı çözüm önceliği belirleyin.", "Demokratik", 5, 0, 10),
+                ("Destek ekibine tekrar eden sorun analizi yaptırın.", "Koçvari", 5, 5, 5),
+                ("Talepleri kapatmaya devam edip ortak nedeni araştırmayın.", "Kaçınmacı", -5, -10, -10),
+            ],
+        ),
+        (
+            "Bir çalışanın yönetici yetkisi görev değişikliğinden sonra hâlâ aktif görünüyor.",
+            [
+                ("Yetkiyi doğrulayıp gereksiz erişimi hemen kaldırın.", "Otoriter", -5, 0, 15),
+                ("İK ve sistem sahipleriyle rol değişikliği kayıtlarını kontrol edin.", "Demokratik", 5, 0, 10),
+                ("Ekiple otomatik erişim gözden geçirme süreci oluşturun.", "Koçvari", 5, 5, 5),
+                ("Çalışan kullanmıyor diye yetkiyi olduğu gibi bırakın.", "Kaçınmacı", -5, 5, -15),
+            ],
+        ),
+        (
+            "İki kıdemli geliştirici mimari seçiminde anlaşamıyor; ekip karar beklerken işler gecikiyor.",
+            [
+                ("Ölçütleri belirleyip belirli tarihte teknik kararı verin.", "Otoriter", -5, 10, 0),
+                ("İki yaklaşımı aynı performans ölçütleriyle karşılaştırın.", "Demokratik", 5, 0, 10),
+                ("Kısa prototip için ekibi görevlendirip öğrenimleri değerlendirin.", "Koçvari", 10, 5, 5),
+                ("Anlaşmalarını bekleyip karar tarihini belirlemeyin.", "Kaçınmacı", -5, -10, -10),
+            ],
+        ),
+        (
+            "Yedekleme raporu başarılı görünüyor ancak son geri yükleme testi başarısız oldu.",
+            [
+                ("Yedeklerin kullanılabilirliğini doğrulayana dek acil inceleme başlatın.", "Otoriter", -5, -5, 15),
+                ("Sistem ve iş sürekliliği ekipleriyle risk ve geçici planı paylaşın.", "Demokratik", 5, 0, 10),
+                ("Ekibe düzenli geri yükleme testi takvimi oluşturtun.", "Koçvari", 5, 5, 5),
+                ("Rapor başarılı diye başarısız testi görmezden gelin.", "Kaçınmacı", -5, 5, -15),
+            ],
+        ),
+        (
+            "Mağaza ağındaki kesinti yalnızca belirli şehirlerde görülüyor; sebep henüz net değil.",
+            [
+                ("Etkilenen mağazalar için acil destek ve yedek bağlantı planı uygulayın.", "Otoriter", -5, 10, 5),
+                ("Operatör ve saha ekipleriyle kesinti kapsamını birlikte haritalayın.", "Demokratik", 5, 0, 10),
+                ("Ekibe bölgesel izleme ve uyarı düzeni kurma görevi verin.", "Koçvari", 5, 5, 5),
+                ("Tüm şehirler etkilenmediği için müdahaleyi erteleyin.", "Kaçınmacı", -5, -10, -15),
+            ],
+        ),
+        (
+            "Yeni yazılımı kullanacak mağaza ekibi eğitim tarihinden önce sisteme erişim aldı ve yanlış işlem yaptı.",
+            [
+                ("Gerekli erişimleri sınırlayıp hatalı kayıtları doğrulayın.", "Otoriter", -5, -5, 10),
+                ("Mağaza ve eğitim ekipleriyle geçiş takvimini yeniden planlayın.", "Demokratik", 5, 0, 10),
+                ("Ekiple eğitim tamamlanmadan erişim verilmesini önleyen kontrol kurun.", "Koçvari", 5, 5, 5),
+                ("İşlemler az diye hatalı kayıtları incelemeyin.", "Kaçınmacı", -5, 5, -15),
+            ],
+        ),
+        (
+            "Yazılım tedarikçisi bakım penceresini kampanya gecesine almak istiyor.",
+            [
+                ("Çakışan bakımı reddedip farklı zaman talep edin.", "Otoriter", -5, 5, 10),
+                ("E-ticaret ve mağaza ekipleriyle etkiyi değerlendirip tarih seçin.", "Demokratik", 5, 0, 10),
+                ("Ekibe kesintisiz geçiş ve geri dönüş planı hazırlatın.", "Koçvari", 5, 5, 5),
+                ("Bakımın etkisini öğrenmeden önerilen saati kabul edin.", "Kaçınmacı", -5, 5, -15),
+            ],
+        ),
+    ],
+
+    "E-Ticaret": [
+        (
+            "İndirim gününde site trafiği beklenenin beş katına çıktı; siparişler yavaşlıyor.",
+            [
+                ("Onaylı kapasite artırma planını hemen devreye alın.", "Otoriter", -5, 10, 5),
+                ("Teknik ve müşteri ekipleriyle kritik sayfalara öncelik verin.", "Demokratik", 5, 0, 10),
+                ("Ekibi izleme, düzeltme ve bilgilendirme işlerine ayırın.", "Koçvari", 5, 5, 5),
+                ("Trafik azalır diye müşterilere bilgi vermeden bekleyin.", "Kaçınmacı", -5, -10, -15),
+            ],
+        ),
+        (
+            "Stok eşitleme hatası nedeniyle tükenmiş ürünler sitede satılmaya devam ediyor.",
+            [
+                ("Ürün satışını durdurup etkilenen siparişleri belirleyin.", "Otoriter", -5, 0, 10),
+                ("Müşterilere alternatif ürün veya iade seçeneklerini açıkça sunun.", "Demokratik", 5, -5, 15),
+                ("IT ve stok ekipleriyle eşitleme kontrolünü yeniden tasarlayın.", "Koçvari", 5, 5, 5),
+                ("Şikâyetler gelene kadar ürünü satışta tutun.", "Kaçınmacı", -5, 5, -15),
+            ],
+        ),
+        (
+            "Kargo firması art arda üçüncü kez gecikti; müşteri talepleri hızla artıyor.",
+            [
+                ("Sözleşmedeki hizmet düzeyini uygulayıp alternatif taşıyıcı açın.", "Otoriter", -5, 10, 5),
+                ("Kargo firmasıyla iyileştirme takvimi ve müşteri bilgilendirmesi hazırlayın.", "Demokratik", 5, 0, 10),
+                ("Ekibe taşıyıcı performansı için haftalık izleme sistemi kurdurun.", "Koçvari", 5, 5, 5),
+                ("Gecikmeleri müşteriler sorana kadar duyurmayın.", "Kaçınmacı", -5, -10, -15),
+            ],
+        ),
+        (
+            "İade sayfasındaki teknik hata, müşterilerin iade kodu oluşturmasını engelliyor.",
+            [
+                ("Hata çözülene kadar onaylı alternatif iade kanalını açın.", "Otoriter", -5, 10, 5),
+                ("Müşteri hizmetleri ve teknik ekiple açık bilgilendirme yapın.", "Demokratik", 5, 0, 10),
+                ("Ekibe iade akışı için düzenli uçtan uca test planlatın.", "Koçvari", 5, 5, 5),
+                ("Sorun çözülene kadar iade taleplerini yanıtsız bırakın.", "Kaçınmacı", -5, -10, -15),
+            ],
+        ),
+        (
+            "Ürün sayfasında montun beden tablosu yanlış; aynı nedenle çok sayıda iade oluştu.",
+            [
+                ("Beden tablosunu kaldırıp doğru ölçü gelene kadar uyarı koyun.", "Otoriter", -5, 0, 10),
+                ("Ürün ve müşteri ekipleriyle doğru ölçüleri teyit edip yayımlayın.", "Demokratik", 5, 0, 10),
+                ("İçerik ekibiyle beden bilgisi için çift kontrol adımı kurun.", "Koçvari", 5, 5, 5),
+                ("İadeleri normal sayıp beden tablosunu değiştirmeyin.", "Kaçınmacı", -5, 5, -15),
+            ],
+        ),
+        (
+            "Ödeme ekranında bazı bankaların kartlarıyla işlem başarısız oluyor; kampanya devam ediyor.",
+            [
+                ("Etkilenen ödeme yöntemini izole edip sağlayıcıya acil bildirin.", "Otoriter", -5, 5, 10),
+                ("Müşteri ve teknik ekiplerle kullanılabilir ödeme seçeneklerini duyurun.", "Demokratik", 5, 0, 10),
+                ("Ekiple banka bazlı işlem izleme paneli oluşturun.", "Koçvari", 5, 5, 5),
+                ("Müşterilerin farklı kart denemesini bekleyip açıklama yapmayın.", "Kaçınmacı", -5, -10, -15),
+            ],
+        ),
+        (
+            "Yeni sitede filtreleme kadın ve çocuk ürünlerini karıştırıyor; dönüşüm oranı düşüyor.",
+            [
+                ("Hatalı filtreyi geçici kapatıp kategori gezinmesini açık tutun.", "Otoriter", -5, 5, 5),
+                ("Ürün ve teknik ekiple örnek hataları inceleyip öncelik belirleyin.", "Demokratik", 5, 0, 10),
+                ("Ekibe kategori testi ve kontrol listesi hazırlatın.", "Koçvari", 5, 5, 5),
+                ("Raporlar netleşene kadar filtreyi aynı şekilde bırakın.", "Kaçınmacı", -5, -10, -10),
+            ],
+        ),
+        (
+            "Sosyal medyada bir müşteri, yanlış ürün teslim edildiğini anlatan gönderisiyle yoğun etkileşim aldı.",
+            [
+                ("Siparişi doğrulatıp müşteriye resmî çözüm kanalı üzerinden ulaşın.", "Otoriter", -5, 5, 10),
+                ("Müşterinin izniyle çözüm sürecini şeffaf biçimde takip edin.", "Demokratik", 5, 0, 10),
+                ("Depo ve müşteri ekipleriyle yanlış ürünün kök nedenini araştırın.", "Koçvari", 5, 5, 5),
+                ("Paylaşım unutulur diye müşteriye dönüş yapmayın.", "Kaçınmacı", -5, -5, -15),
+            ],
+        ),
+        (
+            "İndirim kodu, koşulları karşılamayan sepetlerde de çalışıyor; sipariş sayısı artıyor.",
+            [
+                ("Kodun hatalı kullanımını durdurup etkilenen siparişleri inceleyin.", "Otoriter", -5, 0, 10),
+                ("Finans ve müşteri ekipleriyle adil çözüm seçeneklerini belirleyin.", "Demokratik", 5, 0, 10),
+                ("Ekibe kampanya kuralı için yayın öncesi test süreci kurdurun.", "Koçvari", 5, 5, 5),
+                ("Satışlar artıyor diye hatayı kampanya bitene kadar bırakın.", "Kaçınmacı", -5, 10, -15),
+            ],
+        ),
+        (
+            "Depodan çıkan siparişlerin takip numarası müşterilere iki gün gecikmeyle iletiliyor.",
+            [
+                ("Bildirim akışını kontrol edip geciken numaraları topluca gönderin.", "Otoriter", -5, 5, 5),
+                ("Kargo ve müşteri ekipleriyle doğru teslim bilgisini paylaşın.", "Demokratik", 5, 0, 10),
+                ("Ekibe bildirim gecikmesi için otomatik uyarı kurdurun.", "Koçvari", 5, 5, 5),
+                ("Kargolar yolda diye bildirim gecikmesini önemsemeyin.", "Kaçınmacı", -5, -5, -10),
+            ],
+        ),
+        (
+            "Ürün yorumlarında aynı ürün için tekrarlayan dikiş sorunu bildiriliyor.",
+            [
+                ("Yeni sevkiyatın satışını kontrol için geçici durdurun.", "Otoriter", -5, -5, 10),
+                ("Kalite ve müşteri ekipleriyle şikâyetleri örnekleyip çözüm belirleyin.", "Demokratik", 5, 0, 10),
+                ("Ekibe yorumlardan kalite uyarısı çıkaran süreç hazırlatın.", "Koçvari", 5, 5, 5),
+                ("Yorumları kişisel görüş sayıp inceleme açmayın.", "Kaçınmacı", -5, 5, -15),
+            ],
+        ),
+        (
+            "Mobil uygulamadaki kampanya afişi, tıklanınca kampanyaya dâhil olmayan ürünleri gösteriyor.",
+            [
+                ("Yanlış yönlendirmeyi durdurup doğru kampanya sayfasını bağlayın.", "Otoriter", -5, 5, 10),
+                ("Pazarlama ve ürün ekipleriyle kapsamı müşterilere açıkça anlatın.", "Demokratik", 5, 0, 10),
+                ("Ekibe kampanya bağlantıları için yayın öncesi kontrol yaptırın.", "Koçvari", 5, 5, 5),
+                ("Afiş yayında kalsın diye yanlış bağlantıyı değiştirmeyin.", "Kaçınmacı", -5, 5, -15),
+            ],
+        ),
+    ],
+}
+
+
+def vakalari_hazirla(ham_vakalar):
+    hazir = {}
+
+    for departman, kayitlar in ham_vakalar.items():
+        hazir[departman] = []
+
+        for sira, (olay, ham_secenekler) in enumerate(kayitlar, start=1):
+            secenekler = []
+
+            for metin, tip, moral, verimlilik, guven in ham_secenekler:
+                secenekler.append(
+                    {
+                        "metin": metin,
+                        "tip": tip,
+                        "etki": {
+                            "Moral": moral,
+                            "Verimlilik": verimlilik,
+                            "Güven": guven,
+                        },
+                    }
+                )
+
+            hazir[departman].append(
+                {
+                    "id": f"{departman}-{sira}",
+                    "olay": olay,
+                    "secenekler": secenekler,
+                }
+            )
+
+    return hazir
+
+
+VAKALAR = vakalari_hazirla(HAM_VAKALAR)
+
+
+# ==========================================================
+# OTURUM HAFIZASI
+# ==========================================================
+
+def yeni_oyun_durumu():
+    return {
+        "started": False,
+        "user_name": "",
+        "user_department": "",
+        "stats": {
+            "Moral": 60,
+            "Verimlilik": 60,
+            "Güven": 60,
+        },
+        "tur": 1,
+        "current_scenario": None,
+        "secim_gecmisi": [],
+        "karar_gecmisi": [],
+        "havuz_kullanilan": [],
+        "karakter_havuzu": [],
+        "vaka_sirasi": [],
+    }
+
+
+for anahtar, varsayilan_deger in yeni_oyun_durumu().items():
+    if anahtar not in st.session_state:
+        st.session_state[anahtar] = varsayilan_deger
+
+
+def oyunu_sifirla():
+    for anahtar, deger in yeni_oyun_durumu().items():
+        st.session_state[anahtar] = deger
+    st.rerun()
+
+
+# ==========================================================
+# KARAKTERLER VE HAZIR VAKA SEÇİMİ
+# ==========================================================
 
 def karakter_sec_veya_uret(departman):
-    havuz_pool = st.session_state.karakter_havuzu
-    if havuz_pool and random.random() < 0.55:
-        return random.choice(havuz_pool), False
+    karakterler = st.session_state.karakter_havuzu
 
-    dept_data = DEPARTMANLAR.get(departman, DEPARTMANLAR["Mağazacılık"])
-    kullanilan_isimler = [k['isim'] for k in havuz_pool]
-    musait_isimler = [i for i in ISIM_HAVUZU if i not in kullanilan_isimler] or ISIM_HAVUZU
+    if karakterler and (len(karakterler) >= 4 or random.random() < 0.65):
+        return random.choice(karakterler)
+
+    kullanilan_isimler = {karakter["isim"] for karakter in karakterler}
+    musait_isimler = [
+        isim for isim in ISIM_HAVUZU if isim not in kullanilan_isimler
+    ]
+
+    if not musait_isimler:
+        return random.choice(karakterler)
 
     yeni_karakter = {
         "isim": random.choice(musait_isimler),
-        "rol": random.choice(dept_data["karakterler"]),
+        "rol": random.choice(DEPARTMANLAR[departman]["karakterler"]),
         "kisilik": random.choice(KISILIK_OZELLIKLERI),
         "iliski": 50,
-        "gecmis": []
+        "gecmis": [],
     }
-    if len(havuz_pool) < 4:
-        havuz_pool.append(yeni_karakter)
-    return yeni_karakter, True
+
+    karakterler.append(yeni_karakter)
+    return yeni_karakter
 
 
 def karakter_guncelle(isim, secilen_metin, etki):
-    for k in st.session_state.karakter_havuzu:
-        if k['isim'] == isim:
-            k['iliski'] = max(0, min(100, k['iliski'] + etki.get('Güven', 0)))
-            kisa_not = "'" + secilen_metin[:60] + "' yaklaşımıyla karşılaştı"
-            k['gecmis'].append(kisa_not)
-            k['gecmis'] = k['gecmis'][-3:]
+    if not isim:
+        return
+
+    for karakter in st.session_state.karakter_havuzu:
+        if karakter["isim"] == isim:
+            karakter["iliski"] = max(
+                0,
+                min(100, karakter["iliski"] + etki.get("Güven", 0)),
+            )
+
+            karakter["gecmis"].append(
+                f"'{secilen_metin[:60]}' yaklaşımıyla karşılaştı"
+            )
+            karakter["gecmis"] = karakter["gecmis"][-3:]
             break
 
 
-def kriz_uret():
+def vaka_sirasini_hazirla(departman):
+    """
+    Oyun başında o departmanın vakaları bir kez karıştırılır.
+    İlk 10 farklı vaka oynatılır; aynı oyun içinde tekrar olmaz.
+    """
+    vaka_idleri = [vaka["id"] for vaka in VAKALAR[departman]]
+    random.shuffle(vaka_idleri)
+    st.session_state.vaka_sirasi = vaka_idleri[:TOPLAM_VAKA]
+
+
+def yeni_vaka_getir():
     departman = st.session_state.user_department
-    dept_data = DEPARTMANLAR.get(departman, DEPARTMANLAR["Mağazacılık"])
+    sira = st.session_state.tur - 1
 
-    tema = random.choice(dept_data["temalar"])
-    baglam = random.choice(dept_data["baglamlar"])
-    onceki_ozet = " | ".join(st.session_state.gecmis_konular[-6:]) if st.session_state.gecmis_konular else "yok"
+    vaka_id = st.session_state.vaka_sirasi[sira]
+    orijinal = next(
+        vaka for vaka in VAKALAR[departman]
+        if vaka["id"] == vaka_id
+    )
 
-    onceki_karar = st.session_state.karar_gecmisi[-1] if st.session_state.karar_gecmisi else None
-    baglanti_ozeti = onceki_karar_ozeti_uret(onceki_karar)
+    secenekler = [
+        {
+            "metin": secenek["metin"],
+            "tip": secenek["tip"],
+            "etki": dict(secenek["etki"]),
+        }
+        for secenek in orijinal["secenekler"]
+    ]
+    random.shuffle(secenekler)
 
-    karakter, yeni_mi = karakter_sec_veya_uret(departman)
-    if yeni_mi:
-        karakter_bilgisi = ("Senaryoda YENİ bir karakter tanıt: " + karakter['isim'] + " (" + karakter['rol'] +
-                             "). Kişilik özelliği: " + karakter['kisilik'] + ". Bu karakteri ismiyle anarak hikayeye dahil et.")
+    karakter = karakter_sec_veya_uret(departman)
+
+    onceki_karar = (
+        st.session_state.karar_gecmisi[-1]
+        if st.session_state.karar_gecmisi
+        else None
+    )
+
+    if onceki_karar:
+        onceki_metin = onceki_karar["metin"].rstrip(".")
+        baglanti = (
+            f"Bir önceki vakada '{onceki_metin}' kararını verdiniz. "
+            "Şimdi departmanınızda farklı bir durumla karşılaşıyorsunuz: "
+        )
     else:
-        gecmis_notu = "; ".join(karakter['gecmis']) if karakter['gecmis'] else "henüz belirgin bir geçmişiniz yok"
-        if karakter['iliski'] >= 65:
-            iliski_durumu = "gayet iyi ve güvene dayalı"
-        elif karakter['iliski'] <= 35:
-            iliski_durumu = "gergin ve mesafeli"
+        baglanti = ""
+
+    st.session_state.havuz_kullanilan.append(vaka_id)
+
+    return {
+        "id": vaka_id,
+        "olay": baglanti + orijinal["olay"],
+        "secenekler": secenekler,
+        "aktif_karakter": karakter["isim"],
+        "karakter_rol": karakter["rol"],
+    }
+
+
+# ==========================================================
+# RAPOR VE ARAYÜZ YARDIMCILARI
+# ==========================================================
+
+def renk_belirle(deger):
+    if deger >= 70:
+        return "#16a34a"
+    if deger >= 40:
+        return "#f59e0b"
+    return "#dc2626"
+
+
+def stat_karti_ciz(label, deger, icon):
+    renk = renk_belirle(deger)
+
+    kart = (
+        f'<div class="stat-card" style="border-left-color:{renk};">'
+        f'<div class="stat-label">{icon} {html.escape(label)}</div>'
+        f'<div class="stat-value">%{deger}</div>'
+        '<div class="progress-outer">'
+        f'<div class="progress-inner" style="width:{deger}%;'
+        f' background:{renk};"></div>'
+        '</div></div>'
+    )
+
+    st.markdown(kart, unsafe_allow_html=True)
+
+
+def karar_karti_ciz(kayit):
+    tip = kayit["tip"]
+    renk = TIP_RENK.get(tip, "#9ca3af")
+
+    metin_kisa = kayit["metin"][:65]
+    if len(kayit["metin"]) > 65:
+        metin_kisa += "..."
+
+    stat_satirlari = ""
+
+    for metrik, etki in kayit["etki"].items():
+        if etki > 0:
+            stil = "stat-up"
+            gosterim = f"▲ +{etki}"
+        elif etki < 0:
+            stil = "stat-down"
+            gosterim = f"▼ {etki}"
         else:
-            iliski_durumu = "orta seviyede, ne çok iyi ne çok kötü"
-        karakter_bilgisi = ("Senaryoda DAHA ÖNCE TANIŞTIĞINIZ şu karakteri tekrar kullan: " + karakter['isim'] + " (" + karakter['rol'] +
-                             ", kişilik: " + karakter['kisilik'] + "). Bu karakterle aranızdaki ilişki şu an " + iliski_durumu +
-                             " durumda. Geçmişte yaşananlar: " + gecmis_notu + ". Yeni senaryoyu bu karakterle olan ilişkinizin doğal bir devamı gibi kurgula.")
+            stil = "stat-same"
+            gosterim = "→ 0"
 
-    baglanti_talimati = ""
-    if baglanti_ozeti:
-        baglanti_talimati = ("DEVAMLILIK BİLGİSİ: " + baglanti_ozeti +
-            " Yeni senaryonun İLK CÜMLESİNDE, bu önceki kararın doğal bir yansımasını hikayenin doğal bir parçası olarak anlat. "
-            "ASLA Moral, Verimlilik, Güven gibi oyun terimlerini doğrudan kullanma; gerçekçi, insani bir anlatım kullan.")
+        stat_satirlari += (
+            '<div class="history-stat-row">'
+            f'<span>{html.escape(metrik)}</span>'
+            f'<span class="{stil}">{gosterim}</span>'
+            '</div>'
+        )
 
-    secenek_sayisi = random.choices([2, 3, 4], weights=[0.25, 0.35, 0.4])[0]
-    secilecek_tipler = random.sample(TUM_TIPLER, secenek_sayisi)
+    karakter_html = ""
 
-    if secenek_sayisi == 2:
-        senaryo_turu_talimati = ("Bu sefer KESKİN BİR İKİLEM senaryosu yaz (yap ya da yapma, onayla ya da reddet tarzı net bir karar anı). "
-                                  "Sadece 2 seçenek olsun, bunlar birbirine net bir şekilde zıt olsun.")
-    elif secenek_sayisi == 3:
-        senaryo_turu_talimati = "3 farklı, nüanslı seçenek sun."
-    else:
-        senaryo_turu_talimati = "4 farklı, nüanslı seçenek sun."
+    if kayit.get("karakter"):
+        karakter_html = (
+            '<div style="font-size:0.75em;color:#047857;'
+            'margin-bottom:4px;">'
+            f'👤 {html.escape(kayit["karakter"])}'
+            '</div>'
+        )
 
-    ornek_satirlar = []
-    for t in secilecek_tipler:
-        satir = '{"metin": "...", "etki": {"Moral": 0, "Verimlilik": 0, "Güven": 0}, "tip": "' + t + '"}'
-        ornek_satirlar.append(satir)
-    ayirici = "," + chr(10)
-    ornek_secenekler = ayirici.join(ornek_satirlar)
+    kart = (
+        f'<div class="history-card" style="border-left-color:{renk};">'
+        f'<div class="history-tur">Vaka {kayit["tur"]}</div>'
+        f'<div class="history-tip" style="background:{renk};">'
+        f'{html.escape(tip)}</div>'
+        f'{karakter_html}'
+        f'<div class="history-metin">"{html.escape(metin_kisa)}"</div>'
+        f'{stat_satirlari}'
+        '</div>'
+    )
 
-    try:
-        istek = f"""Sen üst düzey, tecrübeli ve son derece YARATICI bir LCW (LC Waikiki) Liderlik Koçusun. 
-
-        Bu senaryo özellikle "{departman}" departmanı bağlamında olmalı ve bu departmanın gerçek iş süreçlerini yansıtmalı.
-        Konu teması: {tema}. 
-        Bağlam/ortam: {baglam}. 
-
-        {karakter_bilgisi}
-
-        Daha önce şu konular kullanıldı, bunları ve benzer olay örgülerini KESİNLİKLE TEKRARLAMA: {onceki_ozet}.
-
-        {baglanti_talimati}
-
-        Gerçekçi, özgün, klişe olmayan, günlük hayattan sürpriz detaylar içeren bir yönetim senaryosu yaz (2-4 cümle). 
-        Somut detaylar kullan: sayılar, yüzdeler, tarihler, ürün/kampanya isimleri gibi.
-
-        {senaryo_turu_talimati}
-        Her seçeneğin "tip" etiketi şu listeden birebir kullanılsın (sırayla): {secilecek_tipler}.
-
-        ÖNEMLİ KURALLAR:
-        - Hiçbir seçenek 'mükemmel' olmasın, her birinin bir bedeli olsun. Etkiler -15 ile +15 arasında olsun.
-        - Seçenek metinleri KISA VE ÖZ olsun, EN FAZLA 130 karakter, tek cümle.
-        - Seçenekler birbirine çok bariz zıt olmasın; gerçekçi ve yorumsal olsun.
-
-        SADECE şu JSON formatında döndür, başka hiçbir açıklama ekleme:
-        {{"olay": "...", "secenekler": [
-{ornek_secenekler}
-        ]}}"""
-
-        cevap = model.generate_content(istek)
-        res_text = cevap.text.strip()
-        if "```json" in res_text:
-            res_text = res_text.split("```json")[1].split("```")[0].strip()
-        elif "```" in res_text:
-            res_text = res_text.split("```")[1].split("```")[0].strip()
-
-        data = json.loads(res_text)
-        random.shuffle(data['secenekler'])
-        data['aktif_karakter'] = karakter['isim']
-
-        st.session_state.gecmis_konular.append(tema + " - " + data['olay'][:70])
-        st.session_state.last_error = None
-        st.session_state.ai_success_count += 1
-        return data
-
-    except Exception as e:
-        st.session_state.last_error = str(e)
-
-        eslesenler = [h for h in havuz if h.get("departman") == departman]
-        if not eslesenler:
-            eslesenler = [h for h in havuz if h.get("departman") == "Genel"]
-
-        kullanilmayanlar = [h for h in eslesenler if h['olay'] not in st.session_state.havuz_kullanilan]
-        if not kullanilmayanlar:
-            st.session_state.havuz_kullanilan = []
-            kullanilmayanlar = eslesenler
-
-        secim = random.choice(kullanilmayanlar)
-        st.session_state.havuz_kullanilan.append(secim['olay'])
-
-        secim_copy = {"olay": secim["olay"], "secenekler": [dict(s) for s in secim["secenekler"]], "aktif_karakter": None}
-        random.shuffle(secim_copy['secenekler'])
-        return secim_copy
+    st.markdown(kart, unsafe_allow_html=True)
 
 
 def final_rapor_uret(stats, secim_gecmisi):
     ortalama = sum(stats.values()) / 3
     tip_sayaci = Counter(secim_gecmisi)
-    baskin_tip = tip_sayaci.most_common(1)[0][0] if tip_sayaci else "Belirsiz"
+
+    baskin_tip = (
+        tip_sayaci.most_common(1)[0][0]
+        if tip_sayaci
+        else "Belirsiz"
+    )
 
     tip_aciklamalari = {
-        "Demokratik": "Kararlarınızda ekibinizin fikrini almayı ve katılımcı bir yönetim tarzını önceliklendirdiniz. Bu, uzun vadede güçlü bir güven ortamı kurar ama bazı acil durumlarda karar hızınızı yavaşlatabilir.",
-        "Otoriter": "Çoğunlukla hızlı ve net kararlar alarak operasyonel sonuçlara odaklandınız. Kısa vadede verimlilik sağlasa da, sürekli bu tarz ekipte tükenmişlik ve güven kaybına yol açabilir.",
-        "Koçvari": "Çalışanlarınızın gelişimine ve uzun vadeli potansiyeline yatırım yapan bir yaklaşım sergilediniz. Bu tarz, sürdürülebilir başarı için en dengeli yöntemlerden biridir.",
-        "Kaçınmacı": "Zor kararlar karşısında çoğunlukla geri çekilmeyi veya sorumluluğu ertelemeyi tercih ettiniz. Bu durum kısa vadede rahatlık sağlasa da ekipte belirsizlik ve güvensizlik yaratabilir.",
-        "Belirsiz": "Henüz yeterli veri toplanmadı."
+        "Demokratik": (
+            "Kararlarınızda farklı görüşleri dinlemeyi ve katılımcı bir "
+            "yaklaşımı öne çıkardınız. Bu, güven oluşturabilir; ancak acil "
+            "durumlarda karar hızını da gözetmeniz gerekir."
+        ),
+        "Otoriter": (
+            "Hızlı ve net kararlar almaya yöneldiniz. Bu yaklaşım kriz anında "
+            "yararlı olabilir; sürekli kullanıldığında ekip katılımını azaltabilir."
+        ),
+        "Koçvari": (
+            "Çalışanların gelişimine ve birlikte çözüm üretmeye ağırlık verdiniz. "
+            "Bu yaklaşımın yanında gerektiğinde net öncelikler koymak da önemlidir."
+        ),
+        "Kaçınmacı": (
+            "Bazı zor kararları ertelemeye yöneldiniz. Belirsizlik uzadığında "
+            "ekibin güveni ve iş akışı bundan olumsuz etkilenebilir."
+        ),
+        "Belirsiz": "Henüz yeterli karar verilmedi.",
     }
 
     metrik_yorumlari = {}
+
     for metrik, deger in stats.items():
-        if deger >= 75: seviye = "Güçlü"
-        elif deger >= 50: seviye = "Orta"
-        else: seviye = "Zayıf"
+        if deger >= 75:
+            seviye = "Güçlü"
+        elif deger >= 50:
+            seviye = "Orta"
+        else:
+            seviye = "Geliştirilebilir"
 
         aciklamalar = {
             "Moral": {
-                "Güçlü": "Ekibiniz kendini değerli ve motive hissediyor. Bu, düşük personel devir hızı ve yüksek işbirliği anlamına gelir.",
-                "Orta": "Ekip morali dengeli ama kırılgan. Küçük bir kriz bile motivasyonu hızla düşürebilir.",
-                "Zayıf": "Ekibinizde tükenmişlik belirtileri riski var. Düşük moral genellikle performans düşüşü ve istifa oranlarında artışla sonuçlanır."
+                "Güçlü": "Ekibin motivasyonunu koruyan kararlar aldınız.",
+                "Orta": "Ekip morali dengede; yoğun dönemlerde yakından takip edilmeli.",
+                "Geliştirilebilir": "Ekibin iş yükü ve motivasyonuna daha fazla odaklanabilirsiniz.",
             },
             "Verimlilik": {
-                "Güçlü": "Operasyonel hedeflere ulaşma konusunda güçlüsünüz, ekip süreçleri hızlı yönetiyor.",
-                "Orta": "İşler yürüyor ama optimize edilebilecek gecikmeler ve verimsizlikler mevcut.",
-                "Zayıf": "Operasyonel aksaklıklar riski yüksek; kararlarınız süreçleri yavaşlatmış olabilir."
+                "Güçlü": "Operasyonel akışı destekleyen kararlar aldınız.",
+                "Orta": "İş akışı sürüyor; bazı süreçler iyileştirilebilir.",
+                "Geliştirilebilir": "Gecikme ve darboğazlara daha erken müdahale edebilirsiniz.",
             },
             "Güven": {
-                "Güçlü": "Ekibiniz sizi şeffaf ve adil buluyor, kritik anlarda sizinle açık iletişim kuruyorlar.",
-                "Orta": "Güven var ama sınırlı; ekip bazı konularda sizinle tam açık olmayabilir.",
-                "Zayıf": "Ekip-lider güveni zedelenmiş durumda. Bu, geri bildirim akışını ve dürüst iletişimi ciddi şekilde azaltır."
-            }
+                "Güçlü": "Şeffaflık ve tutarlılık yönünden güçlü bir sonuç elde ettiniz.",
+                "Orta": "Güven dengede; kararların gerekçesini paylaşmak yararlı olabilir.",
+                "Geliştirilebilir": "Daha açık iletişim ve tutarlı uygulamalar güveni artırabilir.",
+            },
         }
-        metrik_yorumlari[metrik] = "**" + metrik + " (%" + str(deger) + " - " + seviye + "):** " + aciklamalar[metrik][seviye]
 
-    return ortalama, baskin_tip, tip_aciklamalari[baskin_tip], metrik_yorumlari, tip_sayaci
+        metrik_yorumlari[metrik] = (
+            f"{metrik} (%{deger} — {seviye}): "
+            f"{aciklamalar[metrik][seviye]}"
+        )
 
-
-def renk_belirle(deger):
-    if deger >= 70: return "#16a34a"
-    elif deger >= 40: return "#f59e0b"
-    else: return "#dc2626"
-
-
-def stat_karti_ciz(label, deger, icon):
-    renk = renk_belirle(deger)
-    html = ('<div class="stat-card" style="border-left-color:' + renk + ';">'
-            '<div class="stat-label">' + icon + ' ' + label + '</div>'
-            '<div class="stat-value">%' + str(deger) + '</div>'
-            '<div class="progress-outer"><div class="progress-inner" style="width:' + str(deger) + '%; background:' + renk + ';"></div></div>'
-            '</div>')
-    st.markdown(html, unsafe_allow_html=True)
-
-
-def karar_kartı_ciz(kayit):
-    tip = kayit.get('tip', 'Belirsiz')
-    renk = tip_renk.get(tip, "#9ca3af")
-    metin_kisa = kayit['metin'][:65] + ("..." if len(kayit['metin']) > 65 else "")
-
-    stat_satirlari = ""
-    for k, v in kayit['etki'].items():
-        if v > 0: cls, ok = "stat-up", "▲ +" + str(v)
-        elif v < 0: cls, ok = "stat-down", "▼ " + str(v)
-        else: cls, ok = "stat-same", "→ 0"
-        stat_satirlari += '<div class="history-stat-row"><span>' + k + '</span><span class="' + cls + '">' + ok + '</span></div>'
-
-    karakter_html = ""
-    if kayit.get("karakter"):
-        karakter_html = '<div style="font-size:0.75em; color:#047857; margin-bottom:4px;">👤 ' + kayit["karakter"] + '</div>'
-
-    html = ('<div class="history-card" style="border-left-color:' + renk + ';">'
-            '<div class="history-tur">Vaka ' + str(kayit['tur']) + '</div>'
-            '<div class="history-tip" style="background:' + renk + ';">' + tip + '</div>'
-            + karakter_html +
-            '<div class="history-metin">"' + metin_kisa + '"</div>'
-            + stat_satirlari +
-            '</div>')
-    st.markdown(html, unsafe_allow_html=True)
+    return (
+        ortalama,
+        baskin_tip,
+        tip_aciklamalari[baskin_tip],
+        metrik_yorumlari,
+        tip_sayaci,
+    )
 
 
 def secenekleri_ciz(current):
-    secenekler = current['secenekler']
-    n = len(secenekler)
-    i = 0
-    while i < n:
-        satir = secenekler[i:i+2]
-        cols = st.columns(len(satir))
-        for j, s in enumerate(satir):
-            idx = i + j
-            with cols[j]:
-                if st.button(s['metin'], key=f"v_{st.session_state.tur}_{idx}"):
-                    for k, v in s['etki'].items():
-                        st.session_state.stats[k] = max(0, min(100, st.session_state.stats[k] + v))
+    secenekler = current["secenekler"]
 
-                    st.session_state.secim_gecmisi.append(s.get('tip', 'Belirsiz'))
+    # Her vaka dört seçenek içerir: iki satır, iki sütun.
+    for baslangic in (0, 2):
+        sutunlar = st.columns(2, gap="medium")
 
-                    aktif_karakter = current.get('aktif_karakter')
-                    if aktif_karakter:
-                        karakter_guncelle(aktif_karakter, s['metin'], s['etki'])
+        for sutun_numarasi, secenek in enumerate(
+            secenekler[baslangic:baslangic + 2]
+        ):
+            secenek_numarasi = baslangic + sutun_numarasi
 
-                    st.session_state.karar_gecmisi.append({
-                        "tur": st.session_state.tur, "metin": s['metin'],
-                        "tip": s.get('tip', 'Belirsiz'), "etki": s['etki'], "karakter": aktif_karakter
-                    })
+            with sutunlar[sutun_numarasi]:
+                tiklandi = st.button(
+                    secenek["metin"],
+                    key=f"v_{st.session_state.tur}_{secenek_numarasi}",
+                    use_container_width=True,
+                )
+
+                if tiklandi:
+                    for metrik, etki in secenek["etki"].items():
+                        st.session_state.stats[metrik] = max(
+                            0,
+                            min(
+                                100,
+                                st.session_state.stats[metrik] + etki,
+                            ),
+                        )
+
+                    st.session_state.secim_gecmisi.append(
+                        secenek["tip"]
+                    )
+
+                    aktif_karakter = current.get("aktif_karakter")
+
+                    karakter_guncelle(
+                        aktif_karakter,
+                        secenek["metin"],
+                        secenek["etki"],
+                    )
+
+                    st.session_state.karar_gecmisi.append(
+                        {
+                            "tur": st.session_state.tur,
+                            "metin": secenek["metin"],
+                            "tip": secenek["tip"],
+                            "etki": dict(secenek["etki"]),
+                            "karakter": aktif_karakter,
+                        }
+                    )
 
                     st.session_state.tur += 1
                     st.session_state.current_scenario = None
                     st.rerun()
-        i += 2
 
 
-# --- SOL MENÜ: TEŞHİS PANELİ ---
+# ==========================================================
+# SOL MENÜ
+# ==========================================================
+
 with st.sidebar:
-    st.header("🔧 Sistem Durumu")
-    st.write(f"✅ AI Başarılı Çağrı: {st.session_state.ai_success_count}")
-    st.write(f"🤖 Kullanılan Model: `{MODEL_ADI}`")
-    if st.session_state.user_department:
-        st.write(f"🏢 Departman: {st.session_state.user_department}")
+    st.header("🎮 Oyun Durumu")
+    st.success("Hazır senaryo modu — API ve faturalandırma gerekmez.")
 
-    if st.session_state.last_error:
-        st.error("❌ AI Bağlantı Hatası (bu yüzden yedek sorular geliyor):")
-        st.code(st.session_state.last_error)
-    else:
-        st.success("Şu ana kadar hata yok.")
+    if st.session_state.user_department:
+        departman = st.session_state.user_department
+
+        st.write(f"🏢 Departman: **{departman}**")
+        st.write(
+            f"📚 Bu departmandaki hazır vaka: "
+            f"**{len(VAKALAR[departman])}**"
+        )
+        st.write(
+            f"✅ Bu oyunda tamamlanan vaka: "
+            f"**{len(st.session_state.karar_gecmisi)} / {TOPLAM_VAKA}**"
+        )
 
     if st.session_state.karakter_havuzu:
         st.write("---")
         st.write("**👥 Tanıştığınız Karakterler**")
-        for k in st.session_state.karakter_havuzu:
-            kart_html = ('<div class="karakter-kart"><b>' + k['isim'] + '</b> — ' + k['rol'] + '<br>'
-                         '<span style="color:#6b7280;">' + k['kisilik'] + '</span><br>'
-                         'İlişki: %' + str(k['iliski']) + '</div>')
-            st.markdown(kart_html, unsafe_allow_html=True)
+
+        for karakter in st.session_state.karakter_havuzu:
+            kart = (
+                '<div class="karakter-kart">'
+                f'<b>{html.escape(karakter["isim"])}</b> — '
+                f'{html.escape(karakter["rol"])}<br>'
+                '<span style="color:#6b7280;">'
+                f'{html.escape(karakter["kisilik"])}'
+                '</span><br>'
+                f'İlişki: %{karakter["iliski"]}'
+                '</div>'
+            )
+
+            st.markdown(kart, unsafe_allow_html=True)
 
     st.write("---")
+
     if st.button("🔄 Oyunu Sıfırla"):
-        st.session_state.clear()
-        st.rerun()
+        oyunu_sifirla()
 
 
 # ==========================================================
-# ============  1. AŞAMA: KARŞILAMA (ONBOARDING) EKRANI  ==
+# KARŞILAMA EKRANI
 # ==========================================================
+
 if not st.session_state.started:
-
-    st.markdown("""
+    st.markdown(
+        """
         <div class="hero-banner">
             <h1>💙 LC Waikiki Liderlik Simülasyonu</h1>
-            <p>Gerçek yönetim senaryolarıyla liderlik becerilerinizi test edin.</p>
+            <p>Gerçekçi yönetim vakalarıyla liderlik kararlarınızı deneyin.</p>
         </div>
-    """, unsafe_allow_html=True)
+        """,
+        unsafe_allow_html=True,
+    )
 
-    col1, col2 = st.columns([1.2, 1])
+    sol, sag = st.columns([1.2, 1])
 
-    with col1:
+    with sol:
         st.subheader("Nasıl Oynanır? 🎯")
-        st.markdown("""
-        - Departmanınızı seçin; senaryolar tamamen **o departmana özel** üretilecek.
-        - Karşınıza toplam **10 farklı liderlik vakası** çıkacak.
-        - Kararlarınız birbirine **bağlı bir hikaye** oluşturacak.
-        - Oyun boyunca **tekrar karşınıza çıkabilecek karakterlerle** tanışacaksınız.
-        - Bazı vakalar 2 seçenekli keskin ikilemler, bazıları 3-4 seçenekli nüanslı kararlar olacak.
-        - Sonunda kişisel bir **"Liderlik Karnesi"** hazırlanacak.
 
-        ⚠️ *Unutmayın: Hiçbir seçenek mükemmel değildir.*
-        """)
+        st.markdown(
+            """
+            - Departmanınızı seçin; vakalar seçtiğiniz departmana özel gelsin.
+            - Her oyunda **10 farklı vaka** çözün.
+            - **Her vakada 4 karar seçeneği** bulunur.
+            - Aynı oyun içinde bir vaka **tekrar etmez**.
+            - Seçimleriniz Moral, Verimlilik ve Güven değerlerini değiştirir.
+            - Oyun sonunda kişisel **Liderlik Karnesi** oluşturulur.
 
-    with col2:
+            **Bu sürüm hazır senaryo kullanır:** API anahtarı,
+            Vertex AI veya faturalandırma gerekmez.
+
+            ⚠️ *Her yaklaşımın farklı avantajları ve bedelleri olabilir.*
+            """
+        )
+
+    with sag:
         st.subheader("📝 Katılımcı Bilgileri")
+
         with st.form("giris_formu"):
-            ad_soyad = st.text_input("Ad Soyad *", placeholder="Örn: Deniz Demirkaynak")
+            ad_soyad = st.text_input(
+                "Ad Soyad *",
+                placeholder="Örn: Deniz Demirkaynak",
+            )
 
-            departman_secenekleri = ["-- Seçiniz --"] + [f"{v['icon']} {k}" for k, v in DEPARTMANLAR.items()]
-            secilen = st.selectbox("Departman *", departman_secenekleri)
+            departman_secenekleri = ["-- Seçiniz --"] + [
+                f"{bilgi['icon']} {ad}"
+                for ad, bilgi in DEPARTMANLAR.items()
+            ]
 
-            gonder = st.form_submit_button("🚀 Simülasyonu Başlat")
+            secilen = st.selectbox(
+                "Departman *",
+                departman_secenekleri,
+            )
+
+            gonder = st.form_submit_button(
+                "🚀 Simülasyonu Başlat"
+            )
 
             if gonder:
-                if ad_soyad.strip() == "":
-                    st.warning("Lütfen devam etmek için adınızı ve soyadınızı girin.")
+                if not ad_soyad.strip():
+                    st.warning(
+                        "Lütfen adınızı ve soyadınızı girin."
+                    )
                 elif secilen == "-- Seçiniz --":
-                    st.warning("Lütfen devam etmek için bir departman seçin.")
+                    st.warning(
+                        "Lütfen bir departman seçin."
+                    )
                 else:
-                    temiz_departman = secilen.split(" ", 1)[1]
+                    departman = secilen.split(" ", 1)[1]
+
                     st.session_state.user_name = ad_soyad.strip()
-                    st.session_state.user_department = temiz_departman
+                    st.session_state.user_department = departman
                     st.session_state.started = True
+
+                    vaka_sirasini_hazirla(departman)
                     st.rerun()
 
     st.stop()
 
 
 # ==========================================================
-# ==================  2. AŞAMA: OYUN EKRANI  ===============
+# OYUN EKRANI
 # ==========================================================
 
-dept_icon = DEPARTMANLAR.get(st.session_state.user_department, {}).get("icon", "🏢")
-ust_bilgi = "👤 " + st.session_state.user_name + "  •  " + dept_icon + " " + st.session_state.user_department
+departman = st.session_state.user_department
+departman_ikonu = DEPARTMANLAR[departman]["icon"]
 
-st.markdown('<div class="hero-banner"><h1>💙 LC Waikiki Liderlik Simülasyonu</h1><p>' + ust_bilgi + '</p></div>', unsafe_allow_html=True)
+ust_bilgi = (
+    f"👤 {html.escape(st.session_state.user_name)}"
+    f" &nbsp;•&nbsp; "
+    f"{departman_ikonu} {html.escape(departman)}"
+)
 
-col_main, col_side = st.columns([2.6, 1])
+st.markdown(
+    '<div class="hero-banner">'
+    '<h1>💙 LC Waikiki Liderlik Simülasyonu</h1>'
+    f'<p>{ust_bilgi}</p>'
+    '</div>',
+    unsafe_allow_html=True,
+)
 
-with col_main:
-    c1, c2, c3 = st.columns(3)
-    with c1: stat_karti_ciz("Moral", st.session_state.stats['Moral'], "😊")
-    with c2: stat_karti_ciz("Verimlilik", st.session_state.stats['Verimlilik'], "📈")
-    with c3: stat_karti_ciz("Güven", st.session_state.stats['Güven'], "🤝")
+ana_alan, yan_alan = st.columns([2.6, 1], gap="large")
+
+with ana_alan:
+    moral_sutunu, verim_sutunu, guven_sutunu = st.columns(3)
+
+    with moral_sutunu:
+        stat_karti_ciz(
+            "Moral",
+            st.session_state.stats["Moral"],
+            "😊",
+        )
+
+    with verim_sutunu:
+        stat_karti_ciz(
+            "Verimlilik",
+            st.session_state.stats["Verimlilik"],
+            "📈",
+        )
+
+    with guven_sutunu:
+        stat_karti_ciz(
+            "Güven",
+            st.session_state.stats["Güven"],
+            "🤝",
+        )
 
     st.write("")
 
     if st.session_state.tur <= TOPLAM_VAKA:
         if st.session_state.current_scenario is None:
-            with st.spinner("Yeni liderlik vakası hazırlanıyor..."):
-                st.session_state.current_scenario = kriz_uret()
+            st.session_state.current_scenario = yeni_vaka_getir()
 
         current = st.session_state.current_scenario
 
-        badge_html = ('<div class="vaka-badge">VAKA ' + str(st.session_state.tur) + ' / ' + str(TOPLAM_VAKA) + '</div> '
-                      '<div class="dept-badge">' + dept_icon + ' ' + st.session_state.user_department + '</div>')
-        if current.get('aktif_karakter'):
-            badge_html += ' <div class="karakter-badge">👤 ' + current["aktif_karakter"] + '</div>'
-        st.markdown(badge_html, unsafe_allow_html=True)
-        st.markdown('<div class="olay-box">' + current["olay"] + '</div>', unsafe_allow_html=True)
+        rozetler = (
+            f'<div class="vaka-badge">'
+            f'VAKA {st.session_state.tur} / {TOPLAM_VAKA}'
+            '</div> '
+            f'<div class="dept-badge">'
+            f'{departman_ikonu} {html.escape(departman)}'
+            '</div>'
+        )
+
+        if current.get("aktif_karakter"):
+            rozetler += (
+                ' <div class="karakter-badge">'
+                f'👤 {html.escape(current["aktif_karakter"])}'
+                ' — '
+                f'{html.escape(current["karakter_rol"])}'
+                '</div>'
+            )
+
+        st.markdown(rozetler, unsafe_allow_html=True)
+
+        st.markdown(
+            '<div class="olay-box">'
+            f'{html.escape(current["olay"])}'
+            '</div>',
+            unsafe_allow_html=True,
+        )
 
         st.markdown("##### Liderlik Yaklaşımınız:")
         secenekleri_ciz(current)
 
     else:
-        st.balloons()
-        st.success(f"🏁 Tebrikler {st.session_state.user_name}, {TOPLAM_VAKA} Günlük Liderlik Maratonunu Tamamladınız!")
-
-        ortalama, baskin_tip, tip_metni, metrik_yorumlari, tip_sayaci = final_rapor_uret(
-            st.session_state.stats, st.session_state.secim_gecmisi
+        st.success(
+            f"🏁 Tebrikler {st.session_state.user_name}, "
+            f"{TOPLAM_VAKA} vakalık simülasyonu tamamladınız!"
         )
 
-        final_html = ('<div class="rapor-kart" style="text-align:center;">'
-                      '<div class="stat-label">FİNAL LİDERLİK ENDEKSİ</div>'
-                      '<div style="font-size:3em; font-weight:800; color:' + renk_belirle(int(ortalama)) + ';">%' + str(int(ortalama)) + '</div>'
-                      '<div style="color:#6b7280;">Bu skor, Moral + Verimlilik + Güven ortalamasıdır.</div>'
-                      '</div>')
-        st.markdown(final_html, unsafe_allow_html=True)
+        (
+            ortalama,
+            baskin_tip,
+            tip_metni,
+            metrik_yorumlari,
+            tip_sayaci,
+        ) = final_rapor_uret(
+            st.session_state.stats,
+            st.session_state.secim_gecmisi,
+        )
 
-        st.write("### 📊 Metrik Bazlı Detaylı Analiz")
-        for metrik, yorum in metrik_yorumlari.items():
-            st.markdown('<div class="rapor-kart">' + yorum + '</div>', unsafe_allow_html=True)
+        final_kart = (
+            '<div class="rapor-kart" style="text-align:center;">'
+            '<div class="stat-label">FİNAL LİDERLİK ENDEKSİ</div>'
+            '<div style="font-size:3em;font-weight:800;'
+            f'color:{renk_belirle(int(ortalama))};">'
+            f'%{int(ortalama)}'
+            '</div>'
+            '<div style="color:#6b7280;">'
+            'Bu skor Moral, Verimlilik ve Güven ortalamasıdır.'
+            '</div>'
+            '</div>'
+        )
+
+        st.markdown(final_kart, unsafe_allow_html=True)
+
+        st.write("### 📊 Metrik Bazlı Analiz")
+
+        for yorum in metrik_yorumlari.values():
+            st.markdown(
+                '<div class="rapor-kart">'
+                f'{html.escape(yorum)}'
+                '</div>',
+                unsafe_allow_html=True,
+            )
 
         st.write("### 🧭 Baskın Liderlik Tarzınız")
-        baskin_html = ('<div class="rapor-kart"><b>' + baskin_tip + '</b> (' + str(tip_sayaci.get(baskin_tip, 0)) + '/' + str(TOPLAM_VAKA) +
-                       ' kararınızda bu yaklaşımı sergilediniz)<br><br>' + tip_metni + '</div>')
-        st.markdown(baskin_html, unsafe_allow_html=True)
 
-        st.write("### 📈 Tüm Kararlarınızın Dağılımı")
-        for tip, sayi in tip_sayaci.items():
+        baskin_kart = (
+            '<div class="rapor-kart">'
+            f'<b>{html.escape(baskin_tip)}</b> '
+            f'({tip_sayaci.get(baskin_tip, 0)}/{TOPLAM_VAKA} karar)'
+            '<br><br>'
+            f'{html.escape(tip_metni)}'
+            '</div>'
+        )
+
+        st.markdown(baskin_kart, unsafe_allow_html=True)
+
+        st.write("### 📈 Kararlarınızın Dağılımı")
+
+        for tip in TIP_RENK:
+            sayi = tip_sayaci.get(tip, 0)
             st.write(f"**{tip}** — {sayi} kez")
             st.progress(sayi / TOPLAM_VAKA)
 
         st.write("---")
+
         if ortalama > 75:
-            st.markdown('<div class="rapor-kart">💎 <b>Genel Değerlendirme:</b> Dengeleri harika koruyan, stratejik bir lidersiniz.</div>', unsafe_allow_html=True)
+            genel_yorum = (
+                "💎 Dengeleri güçlü biçimde koruyan kararlar aldınız."
+            )
         elif ortalama > 50:
-            st.markdown('<div class="rapor-kart">📈 <b>Genel Değerlendirme:</b> Sonuç odaklısınız ama insan faktörüne biraz daha ağırlık vermelisiniz.</div>', unsafe_allow_html=True)
+            genel_yorum = (
+                "📈 Güçlü yönleriniz var; bazı kararların ekip ve süreç "
+                "üzerindeki etkilerini daha fazla dengeleyebilirsiniz."
+            )
         else:
-            st.markdown('<div class="rapor-kart">⚠️ <b>Genel Değerlendirme:</b> Kararlarınızın uzun vadeli etkilerini daha dikkatli tartmalısınız.</div>', unsafe_allow_html=True)
+            genel_yorum = (
+                "⚠️ Kararlarınızın uzun vadeli etkilerini daha dikkatli "
+                "değerlendirebilirsiniz."
+            )
+
+        st.markdown(
+            '<div class="rapor-kart">'
+            f'<b>Genel Değerlendirme:</b> {html.escape(genel_yorum)}'
+            '</div>',
+            unsafe_allow_html=True,
+        )
 
         if st.button("Simülasyonu Baştan Başlat"):
-            st.session_state.clear()
-            st.rerun()
+            oyunu_sifirla()
 
-with col_side:
-    st.markdown('<div class="journey-header">📜 Karar Yolculuğunuz</div>', unsafe_allow_html=True)
+
+with yan_alan:
+    st.markdown(
+        '<div class="journey-header">'
+        '📜 Karar Yolculuğunuz'
+        '</div>',
+        unsafe_allow_html=True,
+    )
+
     if not st.session_state.karar_gecmisi:
-        st.markdown('<div class="empty-journey">Henüz bir karar vermediniz.<br>İlk kararınızı verdiğinizde burada görünecek.</div>', unsafe_allow_html=True)
+        st.markdown(
+            '<div class="empty-journey">'
+            'Henüz bir karar vermediniz.<br>'
+            'İlk kararınız burada görünecek.'
+            '</div>',
+            unsafe_allow_html=True,
+        )
     else:
         for kayit in st.session_state.karar_gecmisi:
-            karar_kartı_ciz(kayit)
+            karar_karti_ciz(kayit)
